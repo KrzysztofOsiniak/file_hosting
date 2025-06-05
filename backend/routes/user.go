@@ -1,0 +1,18 @@
+package routes
+
+import (
+	u "backend/controllers/user"
+	m "backend/middleware"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// Define routes with their middleware and controller.
+func InitUser() *chi.Mux {
+	userRouter := chi.NewRouter()
+	userRouter.Handle("POST /", http.HandlerFunc(u.PostUser))
+	userRouter.Handle("POST /login", http.HandlerFunc(u.PostLogin))
+	userRouter.Handle("DELETE /", m.Auth(http.HandlerFunc(u.DeleteUser)))
+	return userRouter
+}
