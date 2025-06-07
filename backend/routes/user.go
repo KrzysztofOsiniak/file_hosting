@@ -13,6 +13,7 @@ func InitUser() *chi.Mux {
 	userRouter := chi.NewRouter()
 	userRouter.Handle("POST /", http.HandlerFunc(u.PostUser))
 	userRouter.Handle("POST /login", http.HandlerFunc(u.PostLogin))
+	userRouter.Handle("POST /logout", m.Auth(http.HandlerFunc(u.PostLogout)))
 	userRouter.Handle("DELETE /", m.Auth(http.HandlerFunc(u.DeleteUser)))
 	return userRouter
 }

@@ -52,7 +52,7 @@ func TestIntegration(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	// Make a request after the access token expires
+	// Make a request after the access token expires.
 	time.Sleep(time.Second*time.Duration(expiryTime) + time.Second)
 	ok = t.Run("delete the user with the now expired JWT", subtestDeleteUser)
 	if !ok {
@@ -60,19 +60,31 @@ func TestIntegration(t *testing.T) {
 		return
 	}
 
-	// Test creating a user, logging in and deleting the account.
+	// Test creating a user, logging out and in, then deleting the account.
 	ok = t.Run("create a user", subtestPostUser)
 	if !ok {
 		t.Error("Failed creating a user")
 		return
 	}
-	testUser.Cookies = []*http.Cookie{}
-	ok = t.Run("login as the created user", subtestLogin)
+	ok = t.Run("logout", subtestPostLogout)
+	if !ok {
+		t.Error("Failed logging out")
+		return
+	}
+	// Make a request after the access token expires.
+	time.Sleep(time.Second*time.Duration(expiryTime) + time.Second)
+	// Make sure that the user logout deleted the session in the database.
+	ok = t.Run("fail deleting the created user", subtestDeleteUserFail)
+	if !ok {
+		t.Error("Deleted the user account with an expired access token and deleted refresh token")
+		return
+	}
+	ok = t.Run("login as the created user", subtestPostLogin)
 	if !ok {
 		t.Error("Failed logging in")
 		return
 	}
-	ok = t.Run("delete the created user", subtestDeleteUser)
+	ok = t.Run("delete the created user after logging in", subtestDeleteUser)
 	if !ok {
 		t.Error("Failed deleting the created user")
 		return

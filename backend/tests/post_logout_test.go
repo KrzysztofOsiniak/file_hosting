@@ -2,16 +2,14 @@ package test
 
 import (
 	c "backend/util/config"
-	"bytes"
 	"crypto/tls"
-	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"testing"
 )
 
-func subtestPostLogin(t *testing.T) {
+// Test deleting a user.
+func subtestPostLogout(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
@@ -29,25 +27,18 @@ func subtestPostLogin(t *testing.T) {
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	user := user{
-		Username: testUser.Username,
-		Password: testUser.Password,
-	}
-	marshalled, err := json.Marshal(user)
-	if err != nil {
-		t.Error("Error marshalling body to be sent")
+	request := &http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: c.ServerHost, Path: "/user/logout"}, Proto: "2.0", Header: header}
+	if len(testUser.Cookies) == 0 {
+		t.Error("Found no user's cookies to be sent")
 		return
 	}
-	// Wrap NewReader in NopCloser to get ReadCloser.
-	body := io.NopCloser(bytes.NewReader(marshalled))
-	res, err := client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: c.ServerHost, Path: "/user/login"}, Proto: "2.0", Header: header, Body: body})
+	request.AddCookie(testUser.Cookies[0])
+	res, err := client.Do(request)
 	if err != nil || res == nil {
 		t.Error("Server request error")
 		return
 	}
 	if res.StatusCode != 200 {
-		t.Error("Server did not reply with 200 on POST login")
-		return
+		t.Error("Server did not reply with 200 on POST logout")
 	}
-	testUser.Cookies = res.Cookies()
 }
