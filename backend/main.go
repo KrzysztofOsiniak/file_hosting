@@ -2,6 +2,7 @@ package main
 
 import (
 	db "backend/database"
+	logdb "backend/logdatabase"
 	"backend/routes"
 	"crypto/rand"
 	"crypto/rsa"
@@ -47,6 +48,8 @@ func main() {
 		TLSConfig:    &tls.Config{Certificates: c},
 	}
 	db.InitDB()
+	// This is optional, you can disable logging by removing this line.
+	logdb.InitDB()
 	fmt.Println("Connected to DB, starting server")
 	fmt.Println(server.ListenAndServeTLS("util/cert.pem", "util/key.pem"))
 }

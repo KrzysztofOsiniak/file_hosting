@@ -12,12 +12,15 @@ services:
       - DB_PASSWORD=password
       - DB_NAME=app
       - DB_URL=postgres://postgres:password@database:5432/app # URL=postgres://[user]:[password]@[DB host]/[DB to use]
+      - LOG_DB_URL=postgres://postgres:password@log_database:5432/app # URL=postgres://[user]:[password]@[DB host]/[DB to use]
       - JWT_KEY=better-change-it-in-prod # Secret JWT sign key. Should have appropriate length to be secure.
       - JWT_EXPIRY=1 # JWT expiry time in seconds. Currently has a small value for the tests. Change for prod.
     ports:
       - "8080:8080" # [Host port]:[Container Port]
     depends_on:
       database:
+        condition: service_healthy
+      log_database:
         condition: service_healthy
     develop:
         watch:
@@ -30,6 +33,24 @@ services:
       dockerfile: "./postgres.Dockerfile"
     ports:
       - 5432:5432 # [Host port]:[Container Port]
+    user: postgres
+    environment:
+      POSTGRES_USER: postgres # The PostgreSQL user (useful to connect to the database).
+      POSTGRES_PASSWORD: password # The PostgreSQL password (useful to connect to the database).
+      POSTGRES_DB: app # The PostgreSQL default database (automatically created at first launch).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  # Use a separate database to log requests users make.
+  log_database:
+    container_name: log_database
+    build:
+      dockerfile: "./postgres.Dockerfile"
+    ports:
+      - 24000:5432 # [Host port]:[Container Port]
     user: postgres
     environment:
       POSTGRES_USER: postgres # The PostgreSQL user (useful to connect to the database).

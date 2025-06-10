@@ -2,7 +2,9 @@ package user
 
 import (
 	db "backend/database"
+	logdb "backend/logdatabase"
 	"backend/util/cookieutil"
+	"backend/util/logutil"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -92,4 +94,9 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, newCookie)
 	w.WriteHeader(http.StatusOK)
+
+	if logdb.Pool == nil {
+		return
+	}
+	logutil.Log(r.RemoteAddr, userID, user.Username, r.URL.Path, r.Method)
 }
