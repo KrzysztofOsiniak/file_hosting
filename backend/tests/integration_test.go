@@ -29,23 +29,11 @@ func TestIntegration(t *testing.T) {
 	defer clean()
 
 	// Test creating and deleting a user.
-	ok := t.Run("create a user", subtestPostUser)
-	if !ok {
-		t.Error("Failed creating a user")
-		return
-	}
-	ok = t.Run("delete the created user", subtestDeleteUser)
-	if !ok {
-		t.Error("Failed deleting the created user")
-		return
-	}
+	t.Run("create a user", subtestPostUser)
+	t.Run("delete the created user", subtestDeleteUser)
 
 	// Test creating and deleting a user with an expired JWT, but valid refresh token.
-	ok = t.Run("create a user", subtestPostUser)
-	if !ok {
-		t.Error("Failed creating a user")
-		return
-	}
+	t.Run("create a user", subtestPostUser)
 	// JWT expiry time set in seconds.
 	expiryTime, err := strconv.Atoi(c.JWTExpiry)
 	if err != nil {
@@ -54,41 +42,17 @@ func TestIntegration(t *testing.T) {
 	}
 	// Make a request after the access token expires.
 	time.Sleep(time.Second*time.Duration(expiryTime) + time.Second)
-	ok = t.Run("delete the user with the now expired JWT", subtestDeleteUser)
-	if !ok {
-		t.Error("Failed deleting the created user with an expired JWT")
-		return
-	}
+	t.Run("delete the user with the now expired JWT", subtestDeleteUser)
 
 	// Test creating a user, logging out and in, then deleting the account.
-	ok = t.Run("create a user", subtestPostUser)
-	if !ok {
-		t.Error("Failed creating a user")
-		return
-	}
-	ok = t.Run("logout", subtestPostLogout)
-	if !ok {
-		t.Error("Failed logging out")
-		return
-	}
+	t.Run("create a user", subtestPostUser)
+	t.Run("logout", subtestPostLogout)
 	// Make a request after the access token expires.
 	time.Sleep(time.Second*time.Duration(expiryTime) + time.Second)
 	// Make sure that the user logout deleted the session in the database.
-	ok = t.Run("fail deleting the created user", subtestDeleteUserFail)
-	if !ok {
-		t.Error("Deleted the user account with an expired access token and deleted refresh token")
-		return
-	}
-	ok = t.Run("login as the created user", subtestPostLogin)
-	if !ok {
-		t.Error("Failed logging in")
-		return
-	}
-	ok = t.Run("delete the created user after logging in", subtestDeleteUser)
-	if !ok {
-		t.Error("Failed deleting the created user")
-		return
-	}
+	t.Run("fail deleting the created user", subtestDeleteUserFail)
+	t.Run("login as the created user", subtestPostLogin)
+	t.Run("delete the created user after logging in", subtestDeleteUser)
 }
 
 // Clear the database after running the tests.
