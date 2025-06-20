@@ -26,7 +26,7 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 	// Decode() acts the same as: https://pkg.go.dev/encoding/json#Unmarshal
 	err := json.NewDecoder(io.LimitReader(r.Body, 1000)).Decode(&user)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusRequestEntityTooLarge)
 		return
 	}
 	user.Username = strings.TrimSpace(user.Username)

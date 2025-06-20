@@ -28,8 +28,11 @@ func TestIntegration(t *testing.T) {
 	// Clear the database after the tests to be able to run the tests again.
 	defer clean()
 
-	// Test creating and deleting a user.
+	// Test creating a user, changing his username and password, then deleting the user.
 	t.Run("create a user", subtestPostUser)
+	testUser.Username = "testedUser2"
+	t.Run("change the username", subtestPatchUsername)
+	t.Run("change the password", subtestPatchPassword)
 	t.Run("delete the created user", subtestDeleteUser)
 
 	// Test creating and deleting a user with an expired JWT, but valid refresh token.

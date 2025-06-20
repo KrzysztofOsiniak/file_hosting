@@ -11,8 +11,12 @@ import (
 	"testing"
 )
 
-// Test sending a body that's > 1kB.
-func TestBodyTooLarge(t *testing.T) {
+type newUser struct {
+	CurrentPassword string `json:"currentpassword"`
+	NewPassword     string `json:"newpassword"`
+}
+
+func subtestPatchPassword(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
@@ -30,12 +34,9 @@ func TestBodyTooLarge(t *testing.T) {
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	user := user{
-		Username: "bodytest",
-		Password: "password",
-	}
-	for i := 1; i < 400; i++ {
-		user.Username += "Lorem ipsum dolor sit amet, consectetur adipiscing elit"
+	user := newUser{
+		CurrentPassword: testUser.Password,
+		NewPassword:     testUser.Password + "2",
 	}
 	marshalled, err := json.Marshal(user)
 	if err != nil {
@@ -44,8 +45,19 @@ func TestBodyTooLarge(t *testing.T) {
 	}
 	// Wrap NewReader in NopCloser to get ReadCloser.
 	body := io.NopCloser(bytes.NewReader(marshalled))
-	res, _ := client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: c.ServerHost, Path: "/user/"}, Proto: "2.0", Header: header, Body: body})
-	if res.StatusCode != 413 {
-		t.Error("Server did not refuse a body that's too large")
+	request := &http.Request{Method: "PATCH", URL: &url.URL{Scheme: "https", Host: c.ServerHost, Path: "/user/password"}, Proto: "2.0", Header: header, Body: body}
+	if len(testUser.Cookies) == 0 {
+		t.Error("Found no user's cookies to be sent")
+		return
+	}
+	request.AddCookie(testUser.Cookies[0])
+	res, err := client.Do(request)
+	if err != nil || res == nil {
+		t.Error("Server request error")
+		return
+	}
+	if res.StatusCode != 200 {
+		t.Error("Server did not reply with 200 on PATCH password")
+		return
 	}
 }

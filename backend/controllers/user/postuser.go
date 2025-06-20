@@ -27,7 +27,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	// Decode() acts the same as: https://pkg.go.dev/encoding/json#Unmarshal
 	err := json.NewDecoder(io.LimitReader(r.Body, 1000)).Decode(&user)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusRequestEntityTooLarge)
 		return
 	}
 	user.Username = strings.TrimSpace(user.Username)
@@ -76,7 +76,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	err = conn.QueryRow(ctx, "CALL create_user_and_session_($1, $2, $3, $4, $5)", user.Username, hash, userAgent, nil, nil).Scan(&refreshToken, &userID)
 	if err != nil && strings.Contains(err.Error(), pgerrcode.UniqueViolation) {
 		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusConflict)
 		return
 	}
 	if err != nil {
