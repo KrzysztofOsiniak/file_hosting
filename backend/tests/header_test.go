@@ -1,7 +1,6 @@
 package test
 
 import (
-	c "backend/util/config"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -46,7 +45,7 @@ func TestHeaderTooLarge(t *testing.T) {
 	}
 	// Wrap NewReader in NopCloser to get ReadCloser.
 	body := io.NopCloser(bytes.NewReader(marshalled))
-	_, err = client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: c.ServerHost, Path: "/user/"}, Proto: "2.0", Header: header, Body: body})
+	_, err = client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/user/"}, Proto: "2.0", Header: header, Body: body})
 	if err == nil || !strings.Contains(err.Error(), "GOAWAY") {
 		t.Error("Server did not refuse a header that's too large")
 	}

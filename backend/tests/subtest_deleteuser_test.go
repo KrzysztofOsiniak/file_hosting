@@ -1,7 +1,6 @@
 package test
 
 import (
-	c "backend/util/config"
 	"crypto/tls"
 	"net/http"
 	"net/url"
@@ -27,7 +26,7 @@ func subtestDeleteUser(t *testing.T) {
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	request := &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: c.ServerHost, Path: "/user/"}, Proto: "2.0", Header: header}
+	request := &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/user/"}, Proto: "2.0", Header: header}
 	if len(testUser.Cookies) == 0 {
 		t.Error("Found no user's cookies to be sent")
 		return
@@ -63,7 +62,7 @@ func subtestDeleteUserFail(t *testing.T) {
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	request := &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: c.ServerHost, Path: "/user/"}, Proto: "2.0", Header: header}
+	request := &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/user/"}, Proto: "2.0", Header: header}
 	if len(testUser.Cookies) == 0 {
 		t.Error("Found no user's cookies to be sent")
 		return

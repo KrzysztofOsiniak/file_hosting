@@ -1,7 +1,6 @@
 package test
 
 import (
-	c "backend/util/config"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -39,7 +38,7 @@ func subtestPatchUsername(t *testing.T) {
 	}
 	// Wrap NewReader in NopCloser to get ReadCloser.
 	body := io.NopCloser(bytes.NewReader(marshalled))
-	request := &http.Request{Method: "PATCH", URL: &url.URL{Scheme: "https", Host: c.ServerHost, Path: "/user/username"}, Proto: "2.0", Header: header, Body: body}
+	request := &http.Request{Method: "PATCH", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/user/username"}, Proto: "2.0", Header: header, Body: body}
 	if len(testUser.Cookies) == 0 {
 		t.Error("Found no user's cookies to be sent")
 		return

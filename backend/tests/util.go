@@ -6,6 +6,10 @@ import (
 	"os"
 )
 
+var (
+	serverHost = "localhost" + os.Getenv("SERVER_HOST")
+)
+
 const (
 	localCertFile = "../util/cert.pem"
 )

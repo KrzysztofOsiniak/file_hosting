@@ -1,7 +1,6 @@
 package test
 
 import (
-	c "backend/util/config"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -44,7 +43,7 @@ func TestBodyTooLarge(t *testing.T) {
 	}
 	// Wrap NewReader in NopCloser to get ReadCloser.
 	body := io.NopCloser(bytes.NewReader(marshalled))
-	res, _ := client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: c.ServerHost, Path: "/user/"}, Proto: "2.0", Header: header, Body: body})
+	res, _ := client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/user/"}, Proto: "2.0", Header: header, Body: body})
 	if res.StatusCode != 413 {
 		t.Error("Server did not refuse a body that's too large")
 	}
