@@ -11,8 +11,8 @@ import (
 )
 
 type newUser struct {
-	CurrentPassword string `json:"currentpassword"`
-	NewPassword     string `json:"newpassword"`
+	CurrentPassword string
+	NewPassword     string
 }
 
 func subtestPatchPassword(t *testing.T) {
