@@ -8,7 +8,7 @@ LANGUAGE PLPGSQL
 AS $$
 BEGIN
 	INSERT INTO user_ VALUES (DEFAULT, username, password, 'guest') RETURNING id_ INTO user_id;
-	INSERT INTO session_ VALUES (user_id, GEN_RANDOM_UUID(), CURRENT_TIMESTAMP(0) + INTERVAL '14 day', device) RETURNING token_ INTO token;
+	INSERT INTO session_ VALUES (DEFAULT, user_id, GEN_RANDOM_UUID(), CURRENT_TIMESTAMP(0) + INTERVAL '14 day', device) RETURNING token_ INTO token;
 END
 $$;
 `

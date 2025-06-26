@@ -92,7 +92,7 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 	} else {
 		userAgent = r.UserAgent()[:length-1]
 	}
-	err = conn.QueryRow(ctx, "INSERT INTO session_ VALUES ($1, GEN_RANDOM_UUID(), CURRENT_TIMESTAMP(0) + INTERVAL '14 day', $2) RETURNING token_", userID, userAgent).Scan(&refreshToken)
+	err = conn.QueryRow(ctx, "INSERT INTO session_ VALUES (DEFAULT, $1, GEN_RANDOM_UUID(), CURRENT_TIMESTAMP(0) + INTERVAL '14 day', $2) RETURNING token_", userID, userAgent).Scan(&refreshToken)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

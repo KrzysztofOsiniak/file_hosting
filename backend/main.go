@@ -21,6 +21,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(chiM.Logger)
 	r.Mount("/user", routes.InitUser())
+	r.Mount("/session", routes.InitSession())
 
 	p := http.Protocols{}
 	p.SetHTTP1(true)

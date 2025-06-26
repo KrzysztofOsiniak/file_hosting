@@ -56,6 +56,12 @@ func TestIntegration(t *testing.T) {
 	t.Run("fail deleting the created user", subtestDeleteUserFail)
 	t.Run("login as the created user", subtestPostLogin)
 	t.Run("delete the created user after logging in", subtestDeleteUser)
+
+	// Test creating a user and deleting his session.
+	t.Run("create a user", subtestPostUser)
+	t.Run("delete user's session", subtestDeleteSession)
+	t.Run("login after deleting the session", subtestPostLogin)
+	t.Run("delete all user's sessions", subtestDeleteSessions)
 }
 
 // Clear the database after running the tests.

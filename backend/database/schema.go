@@ -34,12 +34,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS UX_user_username_ ON user_ (LOWER(username_));
 // UUID and TIMESTAMPTZ should be automatically generated on an insert query.
 const sessionSchema = `CREATE TABLE IF NOT EXISTS
 session_ (
+	id_			 INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	user_id_ 	 INT REFERENCES user_(id_) ON DELETE CASCADE,
 	token_   	 UUID,
 	expiry_date_ TIMESTAMPTZ NOT NULL,
-	device_  	 TEXT,
-	CONSTRAINT PK_session_ PRIMARY KEY (user_id_, token_)
+	device_  	 TEXT
 );
+CREATE INDEX IF NOT EXISTS I_session_user_id_token_ ON session_ (user_id_, token_);
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 SELECT cron.schedule('delete_expired_sessions', '*/30 * * * *', $$DELETE FROM session_ WHERE expiry_date_ < CURRENT_TIMESTAMP(0)$$);
 `
