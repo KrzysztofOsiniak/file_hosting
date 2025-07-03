@@ -54,9 +54,10 @@ func subtestDeleteSession(t *testing.T) {
 	var sessions allSessions
 	if err := json.NewDecoder(res.Body).Decode(&sessions); err != nil {
 		t.Error("Error decoding JSON:", err)
+		return
 	}
 	if len(sessions.Sessions) == 0 {
-		t.Error("Server request error")
+		t.Error("Server returned an empty session array")
 		return
 	}
 

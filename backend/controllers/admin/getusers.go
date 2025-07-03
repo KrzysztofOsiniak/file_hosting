@@ -1,4 +1,4 @@
-package user
+package admin
 
 import (
 	db "backend/database"
@@ -9,22 +9,25 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
-type allSessionsResponse struct {
-	Sessions []session `json:"sessions"`
+type allUsersResponse struct {
+	Users []user `json:"users"`
 }
 
-type session struct {
-	ID         int       `json:"id"`
-	ExpiryDate time.Time `json:"expiryDate"`
-	Device     string    `json:"device"`
+type user struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
 }
 
-// Get all valid sessions for a user.
-func GetSessions(w http.ResponseWriter, r *http.Request) {
+// Get an array of users that have the value of search in their username.
+func GetUsers(w http.ResponseWriter, r *http.Request) {
 	// Get the userID from the auth middleware.
 	userID := r.Context().Value("id")
+	search := chi.URLParam(r, "username")
 
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
@@ -37,10 +40,11 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the sessions.
+	// Get the users.
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	rows, err := conn.Query(ctx, "SELECT id_, expiry_date_, device_ FROM session_ WHERE user_id_ = $1", userID)
+	// Use || for string concatenation.
+	rows, err := conn.Query(ctx, "SELECT id_, username_, role_ FROM user_ WHERE LOWER(username_) LIKE '%' || LOWER($1) || '%' LIMIT 10", search)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -48,16 +52,16 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Scan the rows into an array.
-	sessionArr := allSessionsResponse{}
+	userArr := allUsersResponse{}
 	for rows.Next() {
-		session := session{}
-		err = rows.Scan(&session.ID, &session.ExpiryDate, &session.Device)
+		user := user{}
+		err = rows.Scan(&user.ID, &user.Username, &user.Role)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		sessionArr.Sessions = append(sessionArr.Sessions, session)
+		userArr.Users = append(userArr.Users, user)
 	}
 	if rows.Err() != nil {
 		fmt.Println(err)
@@ -67,7 +71,7 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(sessionArr)
+	json.NewEncoder(w).Encode(userArr)
 
 	if logdb.Pool == nil {
 		return

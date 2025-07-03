@@ -1,4 +1,4 @@
-package user
+package admin
 
 import (
 	db "backend/database"
@@ -8,11 +8,15 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
-// Delete all user's sessions.
-func DeleteSessions(w http.ResponseWriter, r *http.Request) {
+// Delete a user as an admin.
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	// Get the userID from the auth middleware.
 	userID := r.Context().Value("id")
+	deleteID := chi.URLParam(r, "id")
 
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
@@ -25,10 +29,10 @@ func DeleteSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Delete all user's sessions from the database.
+	// Delete the user from the database.
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	_, err = conn.Exec(ctx, "DELETE from session_ WHERE user_id_ = $1", userID)
+	_, err = conn.Exec(ctx, "DELETE from user_ WHERE id_ = $1", deleteID)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

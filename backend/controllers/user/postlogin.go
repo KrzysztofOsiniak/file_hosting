@@ -57,7 +57,7 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 	var userID int
 	var hash string
 	// Get the user's id in case the credentials match.
-	err = conn.QueryRow(ctx, "SELECT id_, password_ FROM user_ WHERE username_ = $1", user.Username).Scan(&userID, &hash)
+	err = conn.QueryRow(ctx, "SELECT id_, password_ FROM user_ WHERE LOWER(username_) = LOWER($1)", user.Username).Scan(&userID, &hash)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)

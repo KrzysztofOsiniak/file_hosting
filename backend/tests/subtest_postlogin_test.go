@@ -28,7 +28,7 @@ func subtestPostLogin(t *testing.T) {
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	user := user{
+	user := integrationUser{
 		Username: testUser.Username,
 		Password: testUser.Password,
 	}

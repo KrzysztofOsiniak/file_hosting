@@ -2,6 +2,8 @@ package user
 
 import (
 	db "backend/database"
+	logdb "backend/logdatabase"
+	"backend/util/logutil"
 	"context"
 	"fmt"
 	"net/http"
@@ -45,4 +47,9 @@ func DeleteSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+
+	if logdb.Pool == nil {
+		return
+	}
+	logutil.Log(r.RemoteAddr, userID.(int), "", r.URL.Path, r.Method)
 }

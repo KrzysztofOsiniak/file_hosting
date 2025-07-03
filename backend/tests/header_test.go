@@ -34,7 +34,7 @@ func TestHeaderTooLarge(t *testing.T) {
 	for i := 1; i < 400; i++ {
 		header.Set(strconv.Itoa(i), "Lorem ipsum dolor sit amet, consectetur adipiscing elit")
 	}
-	user := user{
+	user := integrationUser{
 		Username: "headertest",
 		Password: "password",
 	}
