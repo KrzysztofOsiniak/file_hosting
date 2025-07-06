@@ -2,6 +2,7 @@ package middleware
 
 import (
 	db "backend/database"
+	logdb "backend/logdatabase"
 	c "backend/util/config"
 	"backend/util/cookieutil"
 	"context"
@@ -83,6 +84,12 @@ func Auth(next http.Handler) http.Handler {
 			http.SetCookie(w, newCookie)
 		}
 
+		if logdb.Pool != nil {
+			// Pass down user's id for deferred logging middleware.
+			var meta *RequestMeta
+			meta = r.Context().Value("meta").(*RequestMeta)
+			meta.ID = userID
+		}
 		// Pass down user's id and refresh token in the context for controllers.
 		ctx := context.WithValue(r.Context(), "id", userID)
 		ctx = context.WithValue(ctx, "session", claims["refreshtoken"].(string))

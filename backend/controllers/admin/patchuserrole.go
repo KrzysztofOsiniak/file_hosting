@@ -2,8 +2,6 @@ package admin
 
 import (
 	db "backend/database"
-	logdb "backend/logdatabase"
-	"backend/util/logutil"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -20,8 +18,6 @@ type userRole struct {
 
 // Patch a user's role to one out of the three possible.
 func PatchUserRole(w http.ResponseWriter, r *http.Request) {
-	// Get the userID from the auth middleware.
-	userID := r.Context().Value("id")
 	patchID := chi.URLParam(r, "id")
 	user := userRole{}
 	// Limit reading the request body up to 1kB.
@@ -55,9 +51,4 @@ func PatchUserRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-
-	if logdb.Pool == nil {
-		return
-	}
-	logutil.Log(r.RemoteAddr, userID.(int), "", r.URL.Path, r.Method)
 }

@@ -2,8 +2,6 @@ package user
 
 import (
 	db "backend/database"
-	logdb "backend/logdatabase"
-	"backend/util/logutil"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -68,9 +66,4 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(sessionArr)
-
-	if logdb.Pool == nil {
-		return
-	}
-	logutil.Log(r.RemoteAddr, userID.(int), "", r.URL.Path, r.Method)
 }

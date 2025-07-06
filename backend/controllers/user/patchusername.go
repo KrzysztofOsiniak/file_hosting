@@ -3,7 +3,7 @@ package user
 import (
 	db "backend/database"
 	logdb "backend/logdatabase"
-	"backend/util/logutil"
+	m "backend/middleware"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -67,8 +67,10 @@ func PatchUsername(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 
-	if logdb.Pool == nil {
-		return
+	if logdb.Pool != nil {
+		// Pass down user's username for deferred logging middleware.
+		var meta *m.RequestMeta
+		meta = r.Context().Value("meta").(*m.RequestMeta)
+		meta.Username = user.Username
 	}
-	logutil.Log(r.RemoteAddr, userID.(int), user.Username, r.URL.Path, r.Method)
 }

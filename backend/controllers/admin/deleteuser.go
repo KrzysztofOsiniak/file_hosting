@@ -2,8 +2,6 @@ package admin
 
 import (
 	db "backend/database"
-	logdb "backend/logdatabase"
-	"backend/util/logutil"
 	"context"
 	"fmt"
 	"net/http"
@@ -14,8 +12,6 @@ import (
 
 // Delete a user as an admin.
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	// Get the userID from the auth middleware.
-	userID := r.Context().Value("id")
 	deleteID := chi.URLParam(r, "id")
 
 	// Get a connection from the database.
@@ -40,9 +36,4 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-
-	if logdb.Pool == nil {
-		return
-	}
-	logutil.Log(r.RemoteAddr, userID.(int), "", r.URL.Path, r.Method)
 }

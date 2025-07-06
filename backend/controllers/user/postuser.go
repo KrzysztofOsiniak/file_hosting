@@ -3,8 +3,8 @@ package user
 import (
 	db "backend/database"
 	logdb "backend/logdatabase"
+	m "backend/middleware"
 	"backend/util/cookieutil"
-	"backend/util/logutil"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -95,8 +95,11 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, newCookie)
 	w.WriteHeader(http.StatusOK)
 
-	if logdb.Pool == nil {
-		return
+	if logdb.Pool != nil {
+		// Pass down user's username and id for deferred logging middleware.
+		var meta *m.RequestMeta
+		meta = r.Context().Value("meta").(*m.RequestMeta)
+		meta.ID = userID
+		meta.Username = user.Username
 	}
-	logutil.Log(r.RemoteAddr, userID, user.Username, r.URL.Path, r.Method)
 }

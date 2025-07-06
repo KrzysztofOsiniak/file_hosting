@@ -3,6 +3,7 @@ package main
 import (
 	db "backend/database"
 	logdb "backend/logdatabase"
+	m "backend/middleware"
 	"backend/routes"
 	"crypto/rand"
 	"crypto/rsa"
@@ -14,12 +15,11 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	chiM "github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
 	r := chi.NewRouter()
-	r.Use(chiM.Logger)
+	r.Use(m.DBRequestLogger, m.RequestLogger)
 	r.Mount("/user", routes.InitUser())
 	r.Mount("/session", routes.InitSession())
 	r.Mount("/admin", routes.InitAdmin())

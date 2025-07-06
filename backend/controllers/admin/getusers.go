@@ -2,8 +2,6 @@ package admin
 
 import (
 	db "backend/database"
-	logdb "backend/logdatabase"
-	"backend/util/logutil"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -25,8 +23,6 @@ type user struct {
 
 // Get an array of users that have the value of search in their username.
 func GetUsers(w http.ResponseWriter, r *http.Request) {
-	// Get the userID from the auth middleware.
-	userID := r.Context().Value("id")
 	search := chi.URLParam(r, "username")
 
 	// Get a connection from the database.
@@ -72,9 +68,4 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(userArr)
-
-	if logdb.Pool == nil {
-		return
-	}
-	logutil.Log(r.RemoteAddr, userID.(int), "", r.URL.Path, r.Method)
 }
