@@ -1,7 +1,8 @@
 package database
 
 import (
-	"backend/database/procedures"
+	f "backend/database/functions"
+	p "backend/database/procedures"
 	"context"
 	"errors"
 	"fmt"
@@ -28,8 +29,9 @@ func InitDB() {
 	// Create the database schema on start.
 	ctx, cancel = context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
-	// Make sure procedures are created after any table they use.
-	createSchema := "START TRANSACTION;" + userSchema + sessionSchema + procedures.CreateProcedures + "COMMIT;"
+	// Make sure procedures/functions are created after any table they use.
+	tables := userSchema + sessionSchema + repositorySchema + fileSchema + filePartSchema + contributorSchema
+	createSchema := "START TRANSACTION;" + tables + p.CreateProcedures + f.CreateFunctions + "COMMIT;"
 	// Use Exec instead of Query to use multiple statements.
 	_, err = pool.Exec(ctx, createSchema)
 	if errors.Is(err, context.DeadlineExceeded) {

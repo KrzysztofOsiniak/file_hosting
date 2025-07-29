@@ -31,6 +31,8 @@ type RequestMeta struct {
 	Username string
 }
 
+// TODO: add error messages to controllers and save them to RequestMeta
+
 // Log all requests into log db.
 func DBRequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

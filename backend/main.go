@@ -5,6 +5,7 @@ import (
 	logdb "backend/logdatabase"
 	m "backend/middleware"
 	"backend/routes"
+	"backend/storage"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -20,9 +21,11 @@ import (
 func main() {
 	r := chi.NewRouter()
 	r.Use(m.DBRequestLogger, m.RequestLogger)
-	r.Mount("/user", routes.InitUser())
-	r.Mount("/session", routes.InitSession())
-	r.Mount("/admin", routes.InitAdmin())
+	r.Mount("/api/user", routes.InitUser())
+	r.Mount("/api/session", routes.InitSession())
+	r.Mount("/api/admin", routes.InitAdmin())
+	r.Mount("/api/repository", routes.InitRepository())
+	r.Mount("/api/file", routes.InitFile())
 
 	p := http.Protocols{}
 	p.SetHTTP1(true)
@@ -49,6 +52,7 @@ func main() {
 		WriteTimeout: time.Second * 10,
 		TLSConfig:    &tls.Config{Certificates: c},
 	}
+	storage.InitStorage("aws")
 	db.InitDB()
 	// This is optional, you can disable logging by removing this line.
 	logdb.InitDB()

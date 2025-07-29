@@ -1,14 +1,25 @@
 package test
 
 import (
+	"bytes"
 	"crypto/tls"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 	"testing"
 )
 
-// Test deleting a user.
-func subtestDeleteUser(t *testing.T) {
+type repository struct {
+	Visibility string
+	Name       string
+}
+
+type repositoryResponse struct {
+	ID int `json:"id"`
+}
+
+func subtestPostRepository(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
@@ -25,7 +36,13 @@ func subtestDeleteUser(t *testing.T) {
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	request := &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/user/"}, Proto: "2.0", Header: header}
+	marshalled, err := json.Marshal(repository{Visibility: "public", Name: "testRepo"})
+	if err != nil {
+		t.Fatal("Error marshalling body to be sent")
+	}
+	// Wrap NewReader in NopCloser to get ReadCloser.
+	body := io.NopCloser(bytes.NewReader(marshalled))
+	request := &http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/repository/"}, Proto: "2.0", Header: header, Body: body}
 	if len(testUser.Cookies) == 0 {
 		t.Fatal("Found no user's cookies to be sent")
 	}
@@ -36,13 +53,18 @@ func subtestDeleteUser(t *testing.T) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		t.Fatal("Server did not reply with 200 on DELETE user")
+		t.Fatal("Server did not reply with 200 on POST repository")
 	}
+	repo := repositoryResponse{}
+	err = json.NewDecoder(res.Body).Decode(&repo)
+	if err != nil {
+		t.Fatal("Error reading body")
+	}
+	testUser.RepoID = repo.ID
 }
 
-// Test deleting a user.
-// This test is expected to receive a 401 status response from the server.
-func subtestDeleteUserFail(t *testing.T) {
+// Call this function having the test user with a guest role.
+func subtestPostRepositoryFail(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
@@ -59,7 +81,13 @@ func subtestDeleteUserFail(t *testing.T) {
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	request := &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/user/"}, Proto: "2.0", Header: header}
+	marshalled, err := json.Marshal(repository{Visibility: "public", Name: "testRepoFail"})
+	if err != nil {
+		t.Fatal("Error marshalling body to be sent")
+	}
+	// Wrap NewReader in NopCloser to get ReadCloser.
+	body := io.NopCloser(bytes.NewReader(marshalled))
+	request := &http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/repository/"}, Proto: "2.0", Header: header, Body: body}
 	if len(testUser.Cookies) == 0 {
 		t.Fatal("Found no user's cookies to be sent")
 	}
@@ -69,7 +97,7 @@ func subtestDeleteUserFail(t *testing.T) {
 		t.Fatal("Server request error")
 	}
 	defer res.Body.Close()
-	if res.StatusCode != 401 {
-		t.Fatal("Server did not reply with 401 on DELETE user")
+	if res.StatusCode != 403 {
+		t.Fatal("Server did not reply with 403 on POST repository")
 	}
 }

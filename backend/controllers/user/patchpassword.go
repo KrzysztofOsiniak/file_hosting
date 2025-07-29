@@ -35,7 +35,7 @@ func PatchPassword(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if utf8.RuneCountInString(user.CurrentPassword) == 0 || utf8.RuneCountInString(user.NewPassword) > 25 {
+	if utf8.RuneCountInString(user.CurrentPassword) == 0 || utf8.RuneCountInString(user.NewPassword) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

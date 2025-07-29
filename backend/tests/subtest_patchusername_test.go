@@ -14,8 +14,7 @@ func subtestPatchUsername(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	// Trust the augmented cert pool in our client.
@@ -33,24 +32,21 @@ func subtestPatchUsername(t *testing.T) {
 	}
 	marshalled, err := json.Marshal(user)
 	if err != nil {
-		t.Error("Error marshalling body to be sent")
-		return
+		t.Fatal("Error marshalling body to be sent")
 	}
 	// Wrap NewReader in NopCloser to get ReadCloser.
 	body := io.NopCloser(bytes.NewReader(marshalled))
-	request := &http.Request{Method: "PATCH", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/user/username"}, Proto: "2.0", Header: header, Body: body}
+	request := &http.Request{Method: "PATCH", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/user/username"}, Proto: "2.0", Header: header, Body: body}
 	if len(testUser.Cookies) == 0 {
-		t.Error("Found no user's cookies to be sent")
-		return
+		t.Fatal("Found no user's cookies to be sent")
 	}
 	request.AddCookie(testUser.Cookies[0])
 	res, err := client.Do(request)
 	if err != nil || res == nil {
-		t.Error("Server request error")
-		return
+		t.Fatal("Server request error")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		t.Error("Server did not reply with 200 on PATCH username")
-		return
+		t.Fatal("Server did not reply with 200 on PATCH username")
 	}
 }

@@ -24,8 +24,7 @@ func subtestDeleteSession(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	// Trust the augmented cert pool in our client.
@@ -39,42 +38,37 @@ func subtestDeleteSession(t *testing.T) {
 	// Get all user's sessions.
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	request := &http.Request{Method: "GET", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/session/all"}, Proto: "2.0", Header: header}
+	request := &http.Request{Method: "GET", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/session/all"}, Proto: "2.0", Header: header}
 	if len(testUser.Cookies) == 0 {
-		t.Error("Found no user's cookies to be sent")
-		return
+		t.Fatal("Found no user's cookies to be sent")
 	}
 	request.AddCookie(testUser.Cookies[0])
 	res, err := client.Do(request)
 	if err != nil || res == nil {
-		t.Error("Server request error")
-		return
+		t.Fatal("Server request error")
 	}
 	defer res.Body.Close()
 	var sessions allSessions
 	if err := json.NewDecoder(res.Body).Decode(&sessions); err != nil {
-		t.Error("Error decoding JSON:", err)
-		return
+		t.Fatal("Error decoding JSON:", err)
 	}
 	if len(sessions.Sessions) == 0 {
-		t.Error("Server returned an empty session array")
-		return
+		t.Fatal("Server returned an empty session array")
 	}
 
 	// Delete a single user's session.
-	request = &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/session/" + strconv.Itoa(sessions.Sessions[0].ID)}, Proto: "2.0", Header: header}
+	request = &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/session/" + strconv.Itoa(sessions.Sessions[0].ID)}, Proto: "2.0", Header: header}
 	if len(testUser.Cookies) == 0 {
-		t.Error("Found no user's cookies to be sent")
-		return
+		t.Fatal("Found no user's cookies to be sent")
 	}
 	request.AddCookie(testUser.Cookies[0])
 	res, err = client.Do(request)
 	if err != nil || res == nil {
-		t.Error("Server request error")
-		return
+		t.Fatal("Server request error")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		t.Error("Server did not reply with 200 on DELETE session")
+		t.Fatal("Server did not reply with 200 on DELETE session")
 	}
 }
 
@@ -83,8 +77,7 @@ func subtestDeleteSessions(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	// Trust the augmented cert pool in our client.
@@ -98,18 +91,16 @@ func subtestDeleteSessions(t *testing.T) {
 	// Delete all user's sessions.
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	request := &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/session/all"}, Proto: "2.0", Header: header}
+	request := &http.Request{Method: "DELETE", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/session/all"}, Proto: "2.0", Header: header}
 	if len(testUser.Cookies) == 0 {
-		t.Error("Found no user's cookies to be sent")
-		return
+		t.Fatal("Found no user's cookies to be sent")
 	}
 	request.AddCookie(testUser.Cookies[0])
 	res, err := client.Do(request)
 	if err != nil || res == nil {
-		t.Error("Server request error")
-		return
+		t.Fatal("Server request error")
 	}
 	if res.StatusCode != 200 {
-		t.Error("Server did not reply with 200 on DELETE session")
+		t.Fatal("Server did not reply with 200 on DELETE session")
 	}
 }

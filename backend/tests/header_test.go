@@ -17,8 +17,7 @@ func TestHeaderTooLarge(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	// Trust the augmented cert pool in our client.
@@ -40,13 +39,12 @@ func TestHeaderTooLarge(t *testing.T) {
 	}
 	marshalled, err := json.Marshal(user)
 	if err != nil {
-		t.Error("Error marshalling body to be sent")
-		return
+		t.Fatal("Error marshalling body to be sent")
 	}
 	// Wrap NewReader in NopCloser to get ReadCloser.
 	body := io.NopCloser(bytes.NewReader(marshalled))
-	_, err = client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/user/"}, Proto: "2.0", Header: header, Body: body})
+	_, err = client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/user/"}, Proto: "2.0", Header: header, Body: body})
 	if err == nil || !strings.Contains(err.Error(), "GOAWAY") {
-		t.Error("Server did not refuse a header that's too large")
+		t.Fatal("Server did not refuse a header that's too large")
 	}
 }

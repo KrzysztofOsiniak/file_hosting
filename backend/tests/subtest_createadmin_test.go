@@ -10,12 +10,12 @@ import (
 )
 
 // Test creating an admin with a direct call to the db.
+// Note that you should call the login subtest after this.
 func subtestCreateAdmin(t *testing.T) {
 	// Hash is salted by default
 	hash, err := argon2id.CreateHash(testUser.Password, argon2id.DefaultParams)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	// Get a connection from the database.
@@ -24,16 +24,14 @@ func subtestCreateAdmin(t *testing.T) {
 	conn, err := db.GetConnection(ctx)
 	defer conn.Release()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
-	// Create the user in the database.
+	// Create the admin with a maximum storage space of 1TB in the database.
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	_, err = conn.Exec(ctx, "INSERT INTO user_ VALUES (DEFAULT, $1, $2, 'admin')", testUser.Username, hash)
+	_, err = conn.Exec(ctx, "INSERT INTO user_ VALUES (DEFAULT, $1, $2, 'admin', 1000000000000)", testUser.Username, hash)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 }

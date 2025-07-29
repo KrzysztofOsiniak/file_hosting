@@ -6,6 +6,7 @@ type integrationUser struct {
 	Username string
 	Password string
 	Cookies  []*http.Cookie
+	RepoID   int
 }
 
 type allUsers struct {

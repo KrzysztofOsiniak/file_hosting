@@ -22,8 +22,8 @@ func TestIntegration(t *testing.T) {
 		Username: "testedUser",
 		Password: "testedPassword",
 	}
-	// Clear the database after the tests to be able to run the tests again.
-	defer clean()
+	// Clear the database.
+	clean()
 
 	// Test creating a user, changing his username and password, then deleting the user.
 	t.Run("create a user", subtestPostUser)
@@ -37,8 +37,7 @@ func TestIntegration(t *testing.T) {
 	// JWT expiry time set in seconds.
 	expiryTime, err := strconv.Atoi(c.JWTExpiry)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	// Make a request after the access token expires.
 	time.Sleep(time.Second*time.Duration(expiryTime) + time.Second)
@@ -71,9 +70,17 @@ func TestIntegration(t *testing.T) {
 	t.Run("login as created admin", subtestPostLogin)
 	t.Run("change the role of the found user", subtestPatchUserRole)
 	t.Run("delete the found user", subtestDeleteUserAsAdmin)
+
+	// Test creating a repository and uploading a file.
+	t.Run("create a repository as an admin", subtestPostRepository)
+	t.Run("upload a file", subtestPostFile)
+	t.Run("delete the created admin", subtestDeleteUser)
+	testUser.Username = "guest"
+	t.Run("create a user", subtestPostUser)
+	t.Run("fail creating repository as a guest", subtestPostRepositoryFail)
 }
 
-// Clear the database after running the tests.
+// Clear the database.
 func clean() {
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)

@@ -15,8 +15,7 @@ func TestBodyTooLarge(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	// Trust the augmented cert pool in our client.
@@ -38,13 +37,12 @@ func TestBodyTooLarge(t *testing.T) {
 	}
 	marshalled, err := json.Marshal(user)
 	if err != nil {
-		t.Error("Error marshalling body to be sent")
-		return
+		t.Fatal("Error marshalling body to be sent")
 	}
 	// Wrap NewReader in NopCloser to get ReadCloser.
 	body := io.NopCloser(bytes.NewReader(marshalled))
-	res, _ := client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/user/"}, Proto: "2.0", Header: header, Body: body})
+	res, _ := client.Do(&http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/user/"}, Proto: "2.0", Header: header, Body: body})
 	if res.StatusCode != 413 {
-		t.Error("Server did not refuse a body that's too large")
+		t.Fatal("Server did not refuse a body that's too large")
 	}
 }
