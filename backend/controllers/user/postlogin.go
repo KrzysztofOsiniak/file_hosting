@@ -16,7 +16,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/alexedwards/argon2id"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func PostLogin(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +32,6 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.Username = strings.TrimSpace(user.Username)
-	// Rune count is used to count "characters" not bytes as would len() do.
 	if utf8.RuneCountInString(user.Username) > 25 || utf8.RuneCountInString(user.Password) > 60 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -40,8 +41,8 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get a connection from the database.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	// Get a connection from the database and start a transaction.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	conn, err := db.GetConnection(ctx)
 	defer conn.Release()
@@ -50,19 +51,31 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable, AccessMode: pgx.ReadOnly, DeferrableMode: pgx.Deferrable})
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// If commit is not run first this will rollback the transaction.
+	defer tx.Rollback(ctx)
 
 	// Check if the user exists.
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
 	var userID int
 	var hash string
 	// Get the user's id in case the credentials match.
-	err = conn.QueryRow(ctx, "SELECT id_, password_ FROM user_ WHERE LOWER(username_) = LOWER($1)", user.Username).Scan(&userID, &hash)
+	err = tx.QueryRow(ctx, "SELECT id_, password_ FROM user_ WHERE LOWER(username_) = LOWER($1)", user.Username).Scan(&userID, &hash)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = tx.Commit(ctx)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -82,19 +95,56 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a new session.
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
 	var refreshToken string
 	var userAgent string
-	// Truncate the user agent to 255 characters.
-	if length := utf8.RuneCountInString(r.UserAgent()); length > 254 {
-		userAgent = r.UserAgent()[:254] + "..."
+	// Truncate the user agent to 255 unicode points.
+	if length := utf8.RuneCountInString(r.UserAgent()); length > 255 {
+		userAgent = string([]rune(r.UserAgent())[:254])
 	} else {
-		userAgent = r.UserAgent()[:length-1]
+		userAgent = r.UserAgent()
 	}
-	err = conn.QueryRow(ctx, "INSERT INTO session_ VALUES (DEFAULT, $1, GEN_RANDOM_UUID(), CURRENT_TIMESTAMP(0) + INTERVAL '14 day', $2) RETURNING token_", userID, userAgent).Scan(&refreshToken)
-	if err != nil {
-		fmt.Println(err)
+	var i int
+	// Retry the transaction on serialization failure.
+	for i = 1; i <= 3; i++ {
+		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// If commit is not run first this will rollback the transaction.
+		defer tx.Rollback(ctx)
+
+		err = tx.QueryRow(ctx, "INSERT INTO session_ VALUES (DEFAULT, $1, GEN_RANDOM_UUID(), CURRENT_TIMESTAMP(0) + INTERVAL '14 day', $2) RETURNING token_", userID, userAgent).Scan(&refreshToken)
+		var pgErr *pgconn.PgError
+		ok := errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = tx.Commit(ctx)
+		ok = errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		break
+	}
+	if i == 4 {
+		fmt.Println("Failed serializing transaction after", i-1, "times")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

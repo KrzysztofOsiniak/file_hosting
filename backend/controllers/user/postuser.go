@@ -7,6 +7,7 @@ import (
 	"backend/util/cookieutil"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/alexedwards/argon2id"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Called when creating an account.
@@ -31,7 +34,6 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.Username = strings.TrimSpace(user.Username)
-	// Rune count is used to count "characters" not bytes as would len() do.
 	if utf8.RuneCountInString(user.Username) > 25 || utf8.RuneCountInString(user.Password) > 60 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -49,7 +51,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get a connection from the database.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	conn, err := db.GetConnection(ctx)
 	defer conn.Release()
@@ -60,8 +62,6 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create the user and the user session in the database.
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
 	var refreshToken string
 	var userID int
 	var userAgent string
@@ -71,16 +71,53 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	} else {
 		userAgent = r.UserAgent()[:length-1]
 	}
-	// The two last arguments have to be specified (can be empty), to be passed into the output parameters:
-	// create_user_and_session_(username TEXT, password TEXT, device TEXT, OUT token UUID, OUT user_id INT)
-	err = conn.QueryRow(ctx, "CALL create_user_and_session_($1, $2, $3, $4, $5)", user.Username, hash, userAgent, nil, nil).Scan(&refreshToken, &userID)
-	if err != nil && strings.Contains(err.Error(), pgerrcode.UniqueViolation) {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusConflict)
-		return
+	// Retry the transaction on serialization failure.
+	var i int
+	for i = 1; i <= 3; i++ {
+		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// If commit is not run first this will rollback the transaction.
+		defer tx.Rollback(ctx)
+
+		err = tx.QueryRow(ctx, "CALL create_user_and_session_($1, $2, $3, $4, $5)", user.Username, hash, userAgent, nil, nil).Scan(&refreshToken, &userID)
+		var pgErr *pgconn.PgError
+		ok := errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.UniqueViolation {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = tx.Commit(ctx)
+		ok = errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		break
 	}
-	if err != nil {
-		fmt.Println(err)
+	if i == 4 {
+		fmt.Println("Failed serializing transaction after", i-1, "times")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

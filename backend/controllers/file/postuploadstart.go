@@ -3,6 +3,8 @@ package file
 import (
 	db "backend/database"
 	"backend/storage"
+	t "backend/types"
+	"backend/util/config"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,6 +15,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -48,9 +51,10 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 	if folderPath == "." {
 		folderPath = ""
 	}
+	userID := r.Context().Value("id").(int)
 
-	// Get a connection from the database and start a transaction.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	// Get a connection from the database.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	conn, err := db.GetConnection(ctx)
 	defer conn.Release()
@@ -59,56 +63,92 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	// If commit is not run first this will rollback the transaction.
-	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-		defer cancel()
-		tx.Rollback(ctx)
-	}()
 
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	userID := r.Context().Value("id")
-	_, err = tx.Exec(ctx, "CALL prepare_file_(@repoID, @userID, @path, @folderPath, @size)",
-		pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "folderPath": folderPath, "size": f.Size})
-	var pgErr *pgconn.PgError
-	if ok := errors.As(err, &pgErr); ok && pgErr.Code == "01007" {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// Retry the transaction on serialization failure.
+	var res t.UploadStartResponse
+	var i int
+	for i = 1; i <= 3; i++ {
+		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// If commit is not run first this will rollback the transaction.
+		defer tx.Rollback(ctx)
 
-	res, err := storage.StartUpload(strconv.Itoa((userID.(int)))+"/"+strconv.Itoa(f.RepositoryID)+"/"+f.Key, f.Size)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		// Check if user can upload the file.
+		_, err = tx.Exec(ctx, "CALL prepare_file_(@repoID, @userID, @path, @folderPath, @size)",
+			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "folderPath": folderPath, "size": f.Size})
+		var pgErr *pgconn.PgError
+		ok := errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		res, err = storage.StartUpload(strconv.Itoa((userID))+"/"+strconv.Itoa(f.RepositoryID)+"/"+f.Key, f.Size)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if config.APPENV == "dev" && i == 1 {
+			// Create a serialization failure if in dev env.
+			createSerializationFailure(ctx, f, userID, folderPath, res.UploadID)
+		}
+
+		// Save the file to the db.
+		err = tx.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, @size, @uploadID, NULL) RETURNING id_",
+			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "type": "file", "size": f.Size,
+				"uploadID": res.UploadID}).Scan(&res.FileID)
+		ok = errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.UniqueViolation {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			fmt.Println("Retrying transaction...")
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = tx.Commit(ctx)
+		ok = errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			fmt.Println("Retrying transaction...")
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		break
 	}
-
-	// Save the file to the db.
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	err = tx.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, @size, @uploadID, NULL) RETURNING id_",
-		pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "type": "file", "size": f.Size,
-			"uploadID": res.UploadID}).Scan(&res.FileID)
-
-	// TODO: Add transaction retry.
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	err = tx.Commit(ctx)
-	if err != nil {
-		fmt.Println(err)
+	if i == 4 {
+		fmt.Println("Failed serializing transaction after", i-1, "times")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -116,4 +156,50 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(res)
+}
+
+func createSerializationFailure(ctx context.Context, f uploadFile, userID int, folderPath string, uploadID string) {
+	conn2, err := db.GetConnection(ctx)
+	defer conn2.Release()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	tx2, err := conn2.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// If commit is not run first this will rollback the transaction.
+	defer tx2.Rollback(ctx)
+	// Change only the key/path to avoid name collision.
+	_, err = tx2.Exec(ctx, "CALL prepare_file_(@repoID, @userID, @path, @folderPath, @size)",
+		pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key + "s", "folderPath": folderPath, "size": f.Size})
+	if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "01007" {
+		fmt.Println("Error test read:", err)
+		return
+	}
+	if err != nil {
+		fmt.Println("Error test read:", err)
+		return
+	}
+	res := t.UploadStartResponse{}
+	err = tx2.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, @size, @uploadID, NULL) RETURNING id_",
+		pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key + "s", "type": "file", "size": f.Size,
+			"uploadID": uploadID}).Scan(&res.FileID)
+	var pgErr *pgconn.PgError
+	ok := errors.As(err, &pgErr)
+	if ok && pgErr.Code == pgerrcode.UniqueViolation {
+		fmt.Println(err)
+		return
+	}
+	if err != nil {
+		fmt.Println("Error test write:", err)
+		return
+	}
+	err = tx2.Commit(ctx)
+	if err != nil {
+		fmt.Println("Error commiting test:", err)
+		return
+	}
 }

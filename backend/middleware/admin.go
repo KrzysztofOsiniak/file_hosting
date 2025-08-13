@@ -17,8 +17,8 @@ func Admin(next http.Handler) http.Handler {
 		// Get the userID from the auth middleware.
 		userID := r.Context().Value("id")
 
-		// Get a connection from the database.
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		// Get a connection from the database and start a transaction.
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 		conn, err := db.GetConnection(ctx)
 		defer conn.Release()
@@ -27,17 +27,29 @@ func Admin(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable, AccessMode: pgx.ReadOnly, DeferrableMode: pgx.Deferrable})
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// If commit is not run first this will rollback the transaction.
+		defer tx.Rollback(ctx)
 
 		// Check for admin role.
-		ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-		defer cancel()
 		var admin int
-		err = conn.QueryRow(ctx, "SELECT 1 FROM user_ WHERE id_ = $1 AND role_ = 'admin'", userID).Scan(&admin)
+		err = tx.QueryRow(ctx, "SELECT 1 FROM user_ WHERE id_ = $1 AND role_ = 'admin'", userID).Scan(&admin)
 		if errors.Is(err, pgx.ErrNoRows) {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		err = tx.Commit(ctx)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)

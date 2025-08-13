@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Verify the user's JWT.
@@ -43,7 +45,7 @@ func Auth(next http.Handler) http.Handler {
 		// If the access token is expired, try creating a new one.
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			// Get a connection from the database.
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 			defer cancel()
 			conn, err := db.GetConnection(ctx)
 			defer conn.Release()
@@ -53,23 +55,54 @@ func Auth(next http.Handler) http.Handler {
 				return
 			}
 
-			ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-			defer cancel()
-			// This variable is unused in the code, but needed to check if the following update updated any rows.
-			var updated bool
-			// Check for the refresh token in the database.
-			// CURRENT_TIMESTAMP(0) - time precision without ms.
-			// This query is explained in the comment for this function.
-			err = conn.QueryRow(ctx, `UPDATE session_ SET expiry_date_ = CURRENT_TIMESTAMP(0) + INTERVAL '14 day' 
-			WHERE user_id_ = $1 AND token_ = $2 AND expiry_date_ > CURRENT_TIMESTAMP(0) RETURNING TRUE`, userID, claims["refreshtoken"]).Scan(&updated)
-			// Happens when no rows were updated.
-			if errors.Is(err, pgx.ErrNoRows) {
-				fmt.Println(err)
-				w.WriteHeader(http.StatusUnauthorized)
-				return
+			// Retry the transaction on serialization failure.
+			var i int
+			for i = 1; i <= 3; i++ {
+				tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+				if err != nil {
+					fmt.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				// If commit is not run first this will rollback the transaction.
+				defer tx.Rollback(ctx)
+
+				var updated bool
+				// Check for the refresh token in the database.
+				// This query is explained in the comment for this function.
+				err = tx.QueryRow(ctx, `UPDATE session_ SET expiry_date_ = CURRENT_TIMESTAMP(0) + INTERVAL '14 day' 
+				WHERE user_id_ = $1 AND token_ = $2 AND expiry_date_ > CURRENT_TIMESTAMP(0) RETURNING TRUE`, userID, claims["refreshtoken"]).Scan(&updated)
+				// Happens when no rows were updated.
+				if errors.Is(err, pgx.ErrNoRows) {
+					fmt.Println(err)
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				var pgErr *pgconn.PgError
+				ok := errors.As(err, &pgErr)
+				if ok && pgErr.Code == pgerrcode.SerializationFailure {
+					continue
+				}
+				if err != nil {
+					fmt.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				err = tx.Commit(ctx)
+				ok = errors.As(err, &pgErr)
+				if ok && pgErr.Code == pgerrcode.SerializationFailure {
+					continue
+				}
+				if err != nil {
+					fmt.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				break
 			}
-			if err != nil {
-				fmt.Println(err)
+			if i == 4 {
+				fmt.Println("Failed serializing transaction after", i-1, "times")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}

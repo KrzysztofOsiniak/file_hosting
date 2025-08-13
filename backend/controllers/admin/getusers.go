@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 type allUsersResponse struct {
@@ -25,8 +26,8 @@ type user struct {
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	search := chi.URLParam(r, "username")
 
-	// Get a connection from the database.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	// Get a connection from the database and start a transaction.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	conn, err := db.GetConnection(ctx)
 	defer conn.Release()
@@ -35,12 +36,17 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable, AccessMode: pgx.ReadOnly, DeferrableMode: pgx.Deferrable})
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// If commit is not run first this will rollback the transaction.
+	defer tx.Rollback(ctx)
 
 	// Get the users.
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	// Use || for string concatenation.
-	rows, err := conn.Query(ctx, "SELECT id_, username_, role_ FROM user_ WHERE LOWER(username_) LIKE '%' || LOWER($1) || '%' LIMIT 10", search)
+	rows, err := tx.Query(ctx, "SELECT id_, username_, role_ FROM user_ WHERE LOWER(username_) LIKE '%' || LOWER($1) || '%' LIMIT 10", search)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -60,6 +66,12 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		userArr.Users = append(userArr.Users, user)
 	}
 	if rows.Err() != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return

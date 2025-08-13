@@ -15,6 +15,7 @@ services:
       - LOG_DB_URL=postgres://postgres:password@log_database:5432/app # URL=postgres://[user]:[password]@[DB host]/[DB to use]
       - JWT_KEY=better-change-it-in-prod # Secret JWT sign key. Should have appropriate length to be secure.
       - JWT_EXPIRY=1 # JWT expiry time in seconds. Currently has a small value for the tests. Change for prod.
+      - APP_ENV=dev # If dev, serializable transaction failure and retry will be tested.
     ports:
       - "8080:8080" # [Host port]:[Container Port]
     depends_on:

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type allSessionsResponse struct {
@@ -24,8 +26,8 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 	// Get the userID from the auth middleware.
 	userID := r.Context().Value("id")
 
-	// Get a connection from the database.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	// Get a connection from the database and start a transaction.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	conn, err := db.GetConnection(ctx)
 	defer conn.Release()
@@ -34,11 +36,17 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable, AccessMode: pgx.ReadOnly, DeferrableMode: pgx.Deferrable})
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// If commit is not run first this will rollback the transaction.
+	defer tx.Rollback(ctx)
 
 	// Get the sessions.
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	rows, err := conn.Query(ctx, "SELECT id_, expiry_date_, device_ FROM session_ WHERE user_id_ = $1", userID)
+	rows, err := tx.Query(ctx, "SELECT id_, expiry_date_, device_ FROM session_ WHERE user_id_ = $1", userID)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -58,6 +66,12 @@ func GetSessions(w http.ResponseWriter, r *http.Request) {
 		sessionArr.Sessions = append(sessionArr.Sessions, session)
 	}
 	if rows.Err() != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return

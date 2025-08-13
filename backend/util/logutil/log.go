@@ -12,7 +12,7 @@ import (
 // Create a log in the log database.
 func Log(ip string, userID int, username string, executionTime float64, endpoint string, method string, status int) {
 	// Get a connection from the log database.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	conn, err := logdb.GetConnection(ctx)
 	defer conn.Release()
@@ -21,8 +21,6 @@ func Log(ip string, userID int, username string, executionTime float64, endpoint
 		return
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
 	_, err = conn.Exec(ctx, "INSERT INTO log_ VALUES (DEFAULT, CURRENT_TIMESTAMP(0), @ip, @userID, @username, @time, @endpoint, @method, @status)",
 		pgx.NamedArgs{"ip": ip, "userID": userID, "username": username, "time": executionTime, "endpoint": endpoint, "method": method, "status": status})
 	if err != nil {

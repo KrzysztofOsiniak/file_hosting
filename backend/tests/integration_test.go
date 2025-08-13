@@ -71,8 +71,9 @@ func TestIntegration(t *testing.T) {
 	t.Run("change the role of the found user", subtestPatchUserRole)
 	t.Run("delete the found user", subtestDeleteUserAsAdmin)
 
-	// Test creating a repository and uploading a file.
+	// Test creating a repository and uploading a file with transaction retry.
 	t.Run("create a repository as an admin", subtestPostRepository)
+	// Test retrying a transaction.
 	t.Run("upload a file", subtestPostFile)
 	t.Run("delete the created admin", subtestDeleteUser)
 	testUser.Username = "guest"
@@ -91,8 +92,6 @@ func clean() {
 		panic("Failed cleaning the database after the tests: " + err.Error())
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
 	// Delete all records from the user_ table.
 	_, err = conn.Exec(ctx, "TRUNCATE user_ CASCADE")
 	if err != nil {

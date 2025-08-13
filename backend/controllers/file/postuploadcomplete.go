@@ -6,7 +6,6 @@ import (
 	"backend/types"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,8 +32,8 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get a connection from the database.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	// Get a connection from the database and start a transaction.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	conn, err := db.GetConnection(ctx)
 	defer conn.Release()
@@ -43,14 +42,19 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable, AccessMode: pgx.ReadOnly, DeferrableMode: pgx.Deferrable})
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// If commit is not run first this will rollback the transaction.
+	defer tx.Rollback(ctx)
 
 	// Get the parts.
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	rows, err := conn.Query(ctx, "SELECT * FROM get_file_parts_(@fileID, @userID)",
+	rows, err := tx.Query(ctx, "SELECT * FROM get_file_parts_(@fileID, @userID)",
 		pgx.NamedArgs{"fileID": req.FileID, "userID": userID})
-	var pgErr *pgconn.PgError
-	if ok := errors.As(err, &pgErr); ok && pgErr.Code == "01007" {
+	if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "01007" {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -78,6 +82,12 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	err = tx.Commit(ctx)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	err = storage.CompleteUpload(strconv.Itoa(userID)+"/"+strconv.Itoa(req.RepositoryID)+"/"+req.FileKey, req.UploadID, parts)
 	if err != nil {
@@ -85,5 +95,8 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	// TODO: Update the file's date in DB.
+
 	w.WriteHeader(http.StatusOK)
 }
