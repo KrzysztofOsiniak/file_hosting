@@ -1,7 +1,7 @@
-package aws
+package fileutil
 
 // If not zero, leftover is the size of the last part in partCount.
-// Minimum part size (in aws s3) is 5MiB.
+// Minimum part size (in aws s3) is 5MiB (not counting the last part).
 func SplitFile(bytes int) (partCount int, partSize int, leftover int) {
 	if bytes <= intPow(10, 7) {
 		return 1, 0, bytes

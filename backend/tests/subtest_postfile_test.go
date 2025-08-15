@@ -1,8 +1,8 @@
 package test
 
 import (
-	"backend/storage/aws"
 	"backend/types"
+	"backend/util/fileutil"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -87,7 +87,7 @@ func subtestPostFile(t *testing.T) {
 		t.Fatal("Server returned an empty user array")
 	}
 
-	partCount, partSize, leftover := aws.SplitFile(int(fileInfo.Size()))
+	partCount, partSize, leftover := fileutil.SplitFile(int(fileInfo.Size()))
 	for i, part := range uploadPartsRes.UploadParts {
 		if i+1 == partCount && leftover != 0 {
 			partSize = leftover

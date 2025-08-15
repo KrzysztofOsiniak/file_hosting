@@ -2,6 +2,7 @@ package aws
 
 import (
 	"backend/types"
+	"backend/util/fileutil"
 	"context"
 	"time"
 
@@ -21,7 +22,7 @@ func StartMultipartUpload(key string, bytes int) (types.UploadStartResponse, err
 	}
 
 	uploadID := *init.UploadId
-	partCount, partSize, leftover := SplitFile(bytes)
+	partCount, partSize, leftover := fileutil.SplitFile(bytes)
 	uploads := []types.UploadPart{}
 	for part := 1; part <= partCount; part++ {
 		if part == partCount && leftover != 0 {
