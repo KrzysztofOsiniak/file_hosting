@@ -4,14 +4,17 @@ import (
 	db "backend/database"
 	"backend/storage"
 	"backend/types"
+	"backend/util/fileutil"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -54,9 +57,11 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 	// Get the parts.
 	rows, err := tx.Query(ctx, "SELECT * FROM get_file_parts_(@fileID, @userID)",
 		pgx.NamedArgs{"fileID": req.FileID, "userID": userID})
-	if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "01007" {
+	var pgErr *pgconn.PgError
+	ok := errors.As(err, &pgErr)
+	if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
 		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 	if err != nil {
@@ -82,6 +87,25 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	if len(parts) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Get the file size to know how many parts are required and check if that amount matches.
+	var size int
+	err = tx.QueryRow(ctx, "SELECT size_ FROM file_ WHERE id_ = $1", req.FileID).Scan(&size)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	partCount, _, _ := fileutil.SplitFile(size)
+	if partCount != len(parts) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	err = tx.Commit(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -96,7 +120,52 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Update the file's date in DB.
+	// Retry the transaction on serialization failure.
+	var i int
+	for i = 1; i <= 3; i++ {
+		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// If commit is not run first this will rollback the transaction.
+		defer tx.Rollback(ctx)
+
+		// Update the file's date in db from null, to mark the file has been fully uploaded.
+		_, err = tx.Exec(ctx, "UPDATE file_ SET upload_date_ = CURRENT_TIMESTAMP(0) WHERE id_ = $1", req.FileID)
+		var pgErr *pgconn.PgError
+		ok := errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = tx.Commit(ctx)
+		ok = errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		break
+	}
+	if i == 4 {
+		fmt.Println("Failed serializing transaction after", i-1, "times")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
