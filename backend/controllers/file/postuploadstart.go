@@ -35,6 +35,10 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusRequestEntityTooLarge)
 		return
 	}
+	if f.Size <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	f.Key = path.Clean(f.Key)
 	if f.Key == "." {
 		w.WriteHeader(http.StatusBadRequest)
