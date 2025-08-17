@@ -79,6 +79,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS UX_contributor_repository_id_user_id_ ON contr
 `
 
 // Size is expressed in bytes.
+// If upload_date_ is NULL, the file is not fully uploaded.
 const fileSchema = `
 DO $$BEGIN 
 CREATE TYPE file_type_enum_ AS ENUM ('file', 'folder');
@@ -96,6 +97,7 @@ file_ (
 	upload_id_	   TEXT NOT NULL,
 	upload_date_   TIMESTAMPTZ
 );
+CREATE INDEX IF NOT EXISTS I_file_user_id_ ON file_ (user_id_);
 CREATE UNIQUE INDEX IF NOT EXISTS UX_file_repository_id_path_ ON file_ (repository_id_, path_);
 `
 

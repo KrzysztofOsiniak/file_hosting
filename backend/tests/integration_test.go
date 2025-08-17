@@ -16,6 +16,8 @@ func init() {
 	db.InitDB()
 }
 
+// TODO: Test deleting a user with more than 1k files (test deleteallfiles code).
+
 // This function is going to test all main features a user may use.
 func TestIntegration(t *testing.T) {
 	testUser = integrationUser{
