@@ -16,6 +16,7 @@ services:
       - JWT_KEY=better-change-it-in-prod # Secret JWT sign key. Should have appropriate length to be secure.
       - JWT_EXPIRY=1 # JWT expiry time in seconds. Currently has a small value for the tests. Change for prod.
       - APP_ENV=dev # If dev, serializable transaction failure and retry will be tested.
+      - MIN_FILE_SIZE=1 # The smallest amount of bytes an uploaded file can have. Can be important since s3 has overhead when storing files.
     ports:
       - "8080:8080" # [Host port]:[Container Port]
     depends_on:

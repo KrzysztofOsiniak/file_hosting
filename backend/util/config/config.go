@@ -1,10 +1,14 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 // Use these to avoid syscalls, for example in controllers.
 var (
-	JWTKey    = os.Getenv("JWT_KEY")
-	JWTExpiry = os.Getenv("JWT_EXPIRY")
-	APPENV    = os.Getenv("APP_ENV")
+	JWTKey         = os.Getenv("JWT_KEY")
+	JWTExpiry      = os.Getenv("JWT_EXPIRY")
+	AppEnv         = os.Getenv("APP_ENV")
+	MinFileSize, _ = strconv.Atoi(os.Getenv("MIN_FILE_SIZE"))
 )

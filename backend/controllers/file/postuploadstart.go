@@ -35,7 +35,7 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusRequestEntityTooLarge)
 		return
 	}
-	if f.Size <= 0 {
+	if f.Size < config.MinFileSize {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -109,7 +109,7 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if config.APPENV == "dev" && i == 1 {
+		if config.AppEnv == "dev" && i == 1 {
 			// Create a serialization failure if in dev env.
 			createSerializationFailure(ctx, f, userID, folderPath, res.UploadID)
 		}
