@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: "seaweedfs"
+    static_configs:
+      - targets: ["master:9324", "volume:9325", "filer:9326", "s3:9327"]
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["prometheus:9090"]
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node_exporter:9100"]
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:28080"]

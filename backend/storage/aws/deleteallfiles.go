@@ -6,42 +6,78 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"golang.org/x/sync/errgroup"
 )
 
-// Delete all uploaded user's files.
-// In progress multipart uploads should be deleted by lifecycle config.
-func DeleteAllFiles(ctx context.Context, userID string) error {
-	for {
-		listInput := &s3.ListObjectsV2Input{Bucket: &bucket, Prefix: aws.String(userID)}
-		listOutput, err := client.ListObjectsV2(ctx, listInput)
-		if err != nil {
-			return err
-		}
-		if len(listOutput.Contents) == 0 {
-			return nil
-		}
+// Delete all user's files.
+func (s Storage) DeleteAllFiles(ctx context.Context, userID string) error {
+	group, groupCtx := errgroup.WithContext(ctx)
 
-		var objects []s3types.ObjectIdentifier
-		for _, obj := range listOutput.Contents {
-			objects = append(objects, s3types.ObjectIdentifier{Key: obj.Key})
-		}
-		delInput := &s3.DeleteObjectsInput{
-			Bucket: aws.String(bucket),
-			Delete: &s3types.Delete{
-				Objects: objects,
-				Quiet:   aws.Bool(true),
-			},
-		}
-		_, err = client.DeleteObjects(ctx, delInput)
-		if err != nil {
-			return err
-		}
+	// Delete all fully uploaded objects.
+	group.Go(func() error {
+		for {
+			listInput := &s3.ListObjectsV2Input{Bucket: &s.Bucket, Prefix: aws.String(userID)}
+			listOutput, err := s.Client.ListObjectsV2(groupCtx, listInput)
+			if err != nil {
+				return err
+			}
+			if len(listOutput.Contents) == 0 {
+				return nil
+			}
 
-		// Continue if there are more objects.
-		if listOutput.IsTruncated != nil && *listOutput.IsTruncated {
-			listInput.ContinuationToken = listOutput.NextContinuationToken
-		} else {
-			return nil
+			var objects []s3types.ObjectIdentifier
+			for _, obj := range listOutput.Contents {
+				objects = append(objects, s3types.ObjectIdentifier{Key: obj.Key})
+			}
+			delInput := &s3.DeleteObjectsInput{
+				Bucket: aws.String(s.Bucket),
+				Delete: &s3types.Delete{
+					Objects: objects,
+					Quiet:   aws.Bool(true),
+				},
+			}
+			_, err = s.Client.DeleteObjects(groupCtx, delInput)
+			if err != nil {
+				return err
+			}
+
+			// Continue if there are more objects.
+			if listOutput.IsTruncated != nil && *listOutput.IsTruncated {
+				listInput.ContinuationToken = listOutput.NextContinuationToken
+			} else {
+				return nil
+			}
 		}
+	})
+
+	// Delete all in-progress uploads.
+	group.Go(func() error {
+		paginator := s3.NewListMultipartUploadsPaginator(s.Client, &s3.ListMultipartUploadsInput{
+			Bucket: &s.Bucket, Prefix: aws.String(userID),
+		})
+
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(groupCtx)
+			if err != nil {
+				return err
+			}
+
+			for _, upload := range page.Uploads {
+				_, err := s.Client.AbortMultipartUpload(groupCtx, &s3.AbortMultipartUploadInput{
+					Bucket:   &s.Bucket,
+					Key:      upload.Key,
+					UploadId: upload.UploadId,
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+
+	if err := group.Wait(); err != nil {
+		return err
 	}
+	return nil
 }

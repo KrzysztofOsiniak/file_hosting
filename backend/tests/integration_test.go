@@ -73,7 +73,8 @@ func TestIntegration(t *testing.T) {
 	t.Run("change the role of the found user", subtestPatchUserRole)
 	t.Run("delete the found user", subtestDeleteUserAsAdmin)
 
-	// Test creating a repository and uploading a file with transaction retry.
+	// Test creating a repository and uploading a file with transaction retry,
+	// then deleting that file by deleting the account.
 	t.Run("create a repository as an admin", subtestPostRepository)
 	// Test retrying a transaction.
 	t.Run("upload a file", subtestPostFile)
@@ -81,6 +82,16 @@ func TestIntegration(t *testing.T) {
 	testUser.Username = "guest"
 	t.Run("create a user", subtestPostUser)
 	t.Run("fail creating repository as a guest", subtestPostRepositoryFail)
+
+	// Test uploading an incomplete multipart file,
+	// then deleting that file by deleting the account.
+	testUser.Username = "admin"
+	t.Run("create an admin user", subtestCreateAdmin)
+	t.Run("login as created admin", subtestPostLogin)
+	t.Run("create a repository as an admin", subtestPostRepository)
+	// Test retrying a transaction.
+	t.Run("upload a file part", subtestPostFilePart)
+	t.Run("delete the created admin", subtestDeleteUser)
 }
 
 // Clear the database.

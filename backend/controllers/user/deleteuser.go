@@ -31,7 +31,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user has any (fully) uploaded files and delete them.
+	// Check if user has any files and delete them.
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable, AccessMode: pgx.ReadOnly, DeferrableMode: pgx.Deferrable})
 	if err != nil {
 		fmt.Println(err)
@@ -40,8 +40,8 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	// If commit is not run first this will rollback the transaction.
 	defer tx.Rollback(ctx)
-	var exists int
-	err = tx.QueryRow(ctx, "SELECT 1 FROM file_ WHERE user_id_ = $1 AND upload_date_ IS NOT NULL", userID).Scan(&exists)
+	var exists bool
+	err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM file_ WHERE user_id_ = $1)", userID).Scan(&exists)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

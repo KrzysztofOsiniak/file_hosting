@@ -52,7 +52,7 @@ func main() {
 		WriteTimeout: time.Second * 10,
 		TLSConfig:    &tls.Config{Certificates: c},
 	}
-	storage.InitStorage("aws")
+	storage.InitStorage()
 	db.InitDB()
 	// This is optional, you can disable logging by removing this line.
 	logdb.InitDB()

@@ -10,13 +10,13 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func CompleteMultipartUpload(key string, uploadID string, completedParts []types.CompletePart) error {
+func (s Storage) CompleteMultipartUpload(key string, uploadID string, completedParts []types.CompletePart) error {
 	completed := []s3types.CompletedPart{}
 	for _, v := range completedParts {
 		completed = append(completed, s3types.CompletedPart{ETag: &v.ETag, PartNumber: aws.Int32(int32(v.Part))})
 	}
 	completeInput := &s3.CompleteMultipartUploadInput{
-		Bucket:   aws.String(bucket),
+		Bucket:   aws.String(s.Bucket),
 		Key:      aws.String(key),
 		UploadId: aws.String(uploadID),
 		MultipartUpload: &s3types.CompletedMultipartUpload{
@@ -26,7 +26,7 @@ func CompleteMultipartUpload(key string, uploadID string, completedParts []types
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	_, err := client.CompleteMultipartUpload(ctx, completeInput)
+	_, err := s.Client.CompleteMultipartUpload(ctx, completeInput)
 	if err != nil {
 		return err
 	}
