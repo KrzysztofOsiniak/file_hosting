@@ -10,11 +10,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func StartMultipartUpload(key string, bytes int) (types.UploadStartResponse, error) {
+func (s Storage) StartMultipartUpload(key string, bytes int) (types.UploadStartResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	init, err := client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
-		Bucket: aws.String(bucket),
+	init, err := s.Client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
+		Bucket: aws.String(s.Bucket),
 		Key:    aws.String(key),
 	})
 	if err != nil {
@@ -30,8 +30,8 @@ func StartMultipartUpload(key string, bytes int) (types.UploadStartResponse, err
 		}
 		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		presignedPart, err := presigner.PresignUploadPart(ctx, &s3.UploadPartInput{
-			Bucket:        aws.String(bucket),
+		presignedPart, err := s.Presigner.PresignUploadPart(ctx, &s3.UploadPartInput{
+			Bucket:        aws.String(s.Bucket),
 			Key:           aws.String(key),
 			UploadId:      aws.String(uploadID),
 			PartNumber:    aws.Int32(int32(part)),

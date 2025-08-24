@@ -10,10 +10,10 @@ import (
 
 // Delete all uploaded user's files.
 // In progress multipart uploads should be deleted by lifecycle config.
-func DeleteAllFiles(ctx context.Context, userID string) error {
+func (s Storage) DeleteAllFiles(ctx context.Context, userID string) error {
 	for {
-		listInput := &s3.ListObjectsV2Input{Bucket: &bucket, Prefix: aws.String(userID)}
-		listOutput, err := client.ListObjectsV2(ctx, listInput)
+		listInput := &s3.ListObjectsV2Input{Bucket: &s.Bucket, Prefix: aws.String(userID)}
+		listOutput, err := s.Client.ListObjectsV2(ctx, listInput)
 		if err != nil {
 			return err
 		}
@@ -26,13 +26,13 @@ func DeleteAllFiles(ctx context.Context, userID string) error {
 			objects = append(objects, s3types.ObjectIdentifier{Key: obj.Key})
 		}
 		delInput := &s3.DeleteObjectsInput{
-			Bucket: aws.String(bucket),
+			Bucket: aws.String(s.Bucket),
 			Delete: &s3types.Delete{
 				Objects: objects,
 				Quiet:   aws.Bool(true),
 			},
 		}
-		_, err = client.DeleteObjects(ctx, delInput)
+		_, err = s.Client.DeleteObjects(ctx, delInput)
 		if err != nil {
 			return err
 		}

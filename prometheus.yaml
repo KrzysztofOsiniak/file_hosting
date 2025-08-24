@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 1m     # How often to scrape targets (default: 1m).
+  evaluation_interval: 1m # How often to evaluate rules (default: 1m).
+
+scrape_configs:
+  # Scrape Prometheus itself.
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
