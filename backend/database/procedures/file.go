@@ -13,7 +13,7 @@ $$;
 `
 
 // folder_path is the path that the file in path_ will be in, for example:
-// folder_path: 'usr/' path: 'usr/somefile'
+// folder_path: 'usr' path: 'usr/somefile'
 const prepareFile = `CREATE OR REPLACE PROCEDURE
 prepare_file_(repository_id BIGINT, user_id BIGINT, path TEXT, folder_path TEXT, size BIGINT)
 LANGUAGE PLPGSQL
