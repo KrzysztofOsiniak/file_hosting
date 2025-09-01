@@ -128,62 +128,62 @@ services:
       retries: 3
     volumes:
       - ./seaweedfss3.json:/etc/s3/s3config.json
-# Below are services for monitoring, remove if not needed.
-  prometheus:
-    container_name: prometheus
-    image: prom/prometheus:v2.21.0
-    ports:
-      - 9090:9090
-    volumes:
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
-      - prometheus:/prometheus
-    command: 
-      - --web.enable-lifecycle
-      - --config.file=/etc/prometheus/prometheus.yaml
-      - --storage.tsdb.retention.time=15d
-  node_exporter:
-    container_name: node_exporter
-    image: quay.io/prometheus/node-exporter:latest
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-      - /:/host:ro,rslave
-    command: 
-      - '--path.rootfs=/host'
-      - '--path.procfs=/host/proc' 
-      - '--path.sysfs=/host/sys'
-      - --collector.filesystem.ignored-mount-points
-      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
-    ports:
-      - 9100:9100
-  cadvisor:
-    container_name: cadvisor
-    image: gcr.io/cadvisor/cadvisor
-    command:
-      - '-port=28080'
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    ports:
-      - 28080:28080
-  grafana:
-    container_name: grafana
-    image: grafana/grafana
-    user: "472"
-    depends_on:
-      - prometheus
-    ports:
-      - 3000:3000
-    volumes:
-      - grafana:/var/lib/grafana
-      - ./grafana.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
-    environment:
-      - GF_SECURITY_ADMIN_USER=test
-      - GF_SECURITY_ADMIN_PASSWORD=test
-      - GF_SECURITY_SECRET_KEY=random-string-change-in-prod
+# Below are services for monitoring, uncomment if needed.
+  # prometheus:
+  #   container_name: prometheus
+  #   image: prom/prometheus:v2.21.0
+  #   ports:
+  #     - 9090:9090
+  #   volumes:
+  #     - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+  #     - prometheus:/prometheus
+  #   command: 
+  #     - --web.enable-lifecycle
+  #     - --config.file=/etc/prometheus/prometheus.yaml
+  #     - --storage.tsdb.retention.time=15d
+  # node_exporter:
+  #   container_name: node_exporter
+  #   image: quay.io/prometheus/node-exporter:latest
+  #   volumes:
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /:/rootfs:ro
+  #     - /:/host:ro,rslave
+  #   command: 
+  #     - '--path.rootfs=/host'
+  #     - '--path.procfs=/host/proc' 
+  #     - '--path.sysfs=/host/sys'
+  #     - --collector.filesystem.ignored-mount-points
+  #     - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+  #   ports:
+  #     - 9100:9100
+  # cadvisor:
+  #   container_name: cadvisor
+  #   image: gcr.io/cadvisor/cadvisor
+  #   command:
+  #     - '-port=28080'
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:rw
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #   ports:
+  #     - 28080:28080
+  # grafana:
+  #   container_name: grafana
+  #   image: grafana/grafana
+  #   user: "472"
+  #   depends_on:
+  #     - prometheus
+  #   ports:
+  #     - 3000:3000
+  #   volumes:
+  #     - grafana:/var/lib/grafana
+  #     - ./grafana.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=test
+  #     - GF_SECURITY_ADMIN_PASSWORD=test
+  #     - GF_SECURITY_SECRET_KEY=random-string-change-in-prod
 
 volumes:
   database: {}
