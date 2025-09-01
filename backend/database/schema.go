@@ -62,20 +62,20 @@ repository_ (
 CREATE UNIQUE INDEX IF NOT EXISTS UX_repository_user_id_name_ ON repository_ (user_id_, name_);
 `
 
-const contributorSchema = `
+const memberSchema = `
 DO $$BEGIN 
 CREATE TYPE permission_enum_ AS ENUM ('full', 'read');
 EXCEPTION
     WHEN DUPLICATE_OBJECT THEN NULL;
 END$$;
 CREATE TABLE IF NOT EXISTS
-contributor_ (
+member_ (
 	id_			   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	repository_id_ BIGINT NOT NULL REFERENCES repository_(id_) ON DELETE CASCADE,
 	user_id_ 	   BIGINT NOT NULL REFERENCES user_(id_) ON DELETE CASCADE,
 	permission_    permission_enum_ NOT NULL
 );
-CREATE UNIQUE INDEX IF NOT EXISTS UX_contributor_repository_id_user_id_ ON contributor_ (repository_id_, user_id_);
+CREATE UNIQUE INDEX IF NOT EXISTS UX_member_repository_id_user_id_ ON member_ (repository_id_, user_id_);
 `
 
 // Size is expressed in bytes.

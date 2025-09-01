@@ -30,7 +30,7 @@ func InitDB() {
 	ctx, cancel = context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 	// Make sure procedures/functions are created after any table they use.
-	tables := userSchema + sessionSchema + repositorySchema + fileSchema + filePartSchema + contributorSchema
+	tables := userSchema + sessionSchema + repositorySchema + fileSchema + filePartSchema + memberSchema
 	createSchema := "START TRANSACTION;" + tables + p.CreateProcedures + f.CreateFunctions + "COMMIT;"
 	// Use Exec instead of Query to use multiple statements.
 	_, err = pool.Exec(ctx, createSchema)
