@@ -32,7 +32,7 @@ func InitStorage() {
 	if storageOption == "" {
 		log.Fatal("Loaded STORAGE_OPTION from environment is not specified")
 	}
-	if storageOption != "cloud" && storageOption != "local" && storageOption != "test" {
+	if storageOption != "cloud" && storageOption != "local" {
 		log.Fatal("Loaded STORAGE_OPTION from environment is invalid")
 	}
 	if storageOption == "local" {
@@ -44,9 +44,6 @@ func InitStorage() {
 		aws.InitStorage(cs.AWS.Client, cs.AWS.Presigner, &cs.AWS.Bucket)
 		return
 	}
-	seaweedfs.InitStorage(ls.Seaweedfs.Client, ls.Seaweedfs.Presigner, &ls.Seaweedfs.Bucket)
-	seaweedfs.InitStorage(ls.AWS.Client, ls.AWS.Presigner, &ls.AWS.Bucket)
-	aws.InitStorage(cs.AWS.Client, cs.AWS.Presigner, &cs.AWS.Bucket)
 }
 
 func StartUpload(key string, bytes int) (types.UploadStartResponse, error) {
@@ -56,8 +53,7 @@ func StartUpload(key string, bytes int) (types.UploadStartResponse, error) {
 	if storageOption == "cloud" {
 		return cs.AWS.StartMultipartUpload(key, bytes)
 	}
-	cs.AWS.StartMultipartUpload(key, bytes)
-	return ls.AWS.StartMultipartUpload(key, bytes)
+	return types.UploadStartResponse{}, nil
 }
 
 func ResumeUpload() {
@@ -71,8 +67,7 @@ func CompleteUpload(key, uploadID string, completedParts []types.CompletePart) e
 	if storageOption == "cloud" {
 		return cs.AWS.CompleteMultipartUpload(key, uploadID, completedParts)
 	}
-	cs.AWS.CompleteMultipartUpload(key, uploadID, completedParts)
-	return ls.AWS.CompleteMultipartUpload(key, uploadID, completedParts)
+	return nil
 }
 
 // Delete all files for a given user.
@@ -83,6 +78,5 @@ func DeleteAllFiles(ctx context.Context, userID string) error {
 	if storageOption == "cloud" {
 		return cs.AWS.DeleteAllFiles(ctx, userID)
 	}
-	cs.AWS.DeleteAllFiles(ctx, userID)
-	return ls.AWS.DeleteAllFiles(ctx, userID)
+	return nil
 }
