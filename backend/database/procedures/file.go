@@ -20,8 +20,8 @@ LANGUAGE PLPGSQL
 AS $$
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM repository_ WHERE user_id_ = user_id AND id_ = repository_id) AND
-	NOT EXISTS (SELECT 1 FROM member_ WHERE repository_id_ = repository_id AND user_id_ = user_id) THEN
-        RAISE EXCEPTION 'user does not have necessary permissions' USING ERRCODE = '01007';
+	NOT EXISTS (SELECT 1 FROM member_ WHERE repository_id_ = repository_id AND user_id_ = user_id AND permission_ = 'full'::permission_enum_) THEN
+        RAISE EXCEPTION 'user does not own the repository or is not a member with enough permissions' USING ERRCODE = '01007';
     END IF;
 	IF COALESCE((SELECT SUM(size_) FROM file_ WHERE user_id_ = user_id), 0) + size > (SELECT space_ FROM user_ WHERE id_ = user_id) THEN
 		RAISE EXCEPTION 'user does not have enough space to insert a file' USING ERRCODE = '01007';

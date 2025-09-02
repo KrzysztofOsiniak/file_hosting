@@ -26,6 +26,7 @@ func main() {
 	r.Mount("/api/admin", routes.InitAdmin())
 	r.Mount("/api/repository", routes.InitRepository())
 	r.Mount("/api/file", routes.InitFile())
+	r.Mount("/api/member", routes.InitMember())
 
 	p := http.Protocols{}
 	p.SetHTTP1(true)

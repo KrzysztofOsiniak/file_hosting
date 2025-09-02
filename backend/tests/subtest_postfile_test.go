@@ -62,7 +62,7 @@ func subtestPostFile(t *testing.T) {
 	}
 
 	// Start multipart upload.
-	m, err := json.Marshal(uploadFile{Key: file.Name(), Size: int(fileInfo.Size()), RepositoryID: testUser.RepoID})
+	m, err := json.Marshal(uploadFile{Key: file.Name(), Size: int(fileInfo.Size()), RepositoryID: testUser.RepositoryID})
 	body := io.NopCloser(bytes.NewReader(m))
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
@@ -133,7 +133,7 @@ func subtestPostFile(t *testing.T) {
 		}
 	}
 
-	m, err = json.Marshal(uploadCompleteRequest{FileKey: file.Name(), UploadID: uploadPartsRes.UploadID, FileID: uploadPartsRes.FileID, RepositoryID: testUser.RepoID})
+	m, err = json.Marshal(uploadCompleteRequest{FileKey: file.Name(), UploadID: uploadPartsRes.UploadID, FileID: uploadPartsRes.FileID, RepositoryID: testUser.RepositoryID})
 	body = io.NopCloser(bytes.NewReader(m))
 	header = http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")

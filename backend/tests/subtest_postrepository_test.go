@@ -60,7 +60,7 @@ func subtestPostRepository(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error reading body")
 	}
-	testUser.RepoID = repo.ID
+	testUser.RepositoryID = repo.ID
 }
 
 // Call this function having the test user with a guest role.

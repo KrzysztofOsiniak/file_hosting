@@ -12,6 +12,9 @@ import (
 // The user that will be used for all the tests.
 var testUser integrationUser
 
+// The user that testUser can use, for example to add as a repository member.
+var secondTestUser integrationUser
+
 func init() {
 	db.InitDB()
 }
@@ -92,6 +95,25 @@ func TestIntegration(t *testing.T) {
 	// Test retrying a transaction.
 	t.Run("upload a file part", subtestPostFilePart)
 	t.Run("delete the created admin", subtestDeleteUser)
+
+	// Test adding a member and uploading a file to a repository as that member.
+	// Create an admin, then create a second admin that creates a repository and adds the first admin to it.
+	// The first admin then uploads a file to that repository as it's member.
+	t.Run("create an admin user", subtestCreateAdmin)
+	t.Run("login as created admin", subtestPostLogin)
+	secondTestUser = integrationUser{Username: testUser.Username, Password: testUser.Password, Cookies: testUser.Cookies}
+	testUser.Username = "admin2"
+	t.Run("create an admin user", subtestCreateAdmin)
+	t.Run("login as created admin", subtestPostLogin)
+	t.Run("create a repository as an admin", subtestPostRepository)
+	t.Run("add secondTestUser to testUser's repository", subtestPostMember)
+	testUser = integrationUser{Username: secondTestUser.Username, Password: secondTestUser.Password, Cookies: secondTestUser.Cookies, RepositoryID: testUser.RepositoryID}
+	t.Run("upload a file", subtestPostFile)
+	t.Run("delete the account along with its uploads", subtestDeleteUser)
+
+	// Test uploading a file with not enough space in user's account.
+
+	// Test adding a folder and uploading a file to it.
 }
 
 // Clear the database.
