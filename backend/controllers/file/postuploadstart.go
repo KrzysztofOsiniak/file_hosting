@@ -102,7 +102,7 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		res, err = storage.StartUpload(strconv.Itoa((userID))+"/"+strconv.Itoa(f.RepositoryID)+"/"+f.Key, f.Size)
+		res, err = storage.StartUpload(ctx, strconv.Itoa((userID))+"/"+strconv.Itoa(f.RepositoryID)+"/"+f.Key, f.Size)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)

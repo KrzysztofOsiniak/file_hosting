@@ -113,7 +113,7 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = storage.CompleteUpload(strconv.Itoa(userID)+"/"+strconv.Itoa(req.RepositoryID)+"/"+req.FileKey, req.UploadID, parts)
+	err = storage.CompleteUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(req.RepositoryID)+"/"+req.FileKey, req.UploadID, parts)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
