@@ -20,6 +20,7 @@ func init() {
 }
 
 // TODO: Test deleting a user with more than 1k files (test deleteallfiles code).
+// TODO: Test uploading a file with not enough space in user's account.
 
 // This function is going to test all main features a user may use.
 func TestIntegration(t *testing.T) {
@@ -96,7 +97,7 @@ func TestIntegration(t *testing.T) {
 	t.Run("upload a file part", subtestPostFilePart)
 	t.Run("delete the created admin", subtestDeleteUser)
 
-	// Test adding a member and uploading a file to a repository as that member.
+	// Test adding a member and uploading a file in a folder to a repository as that member.
 	// Create an admin, then create a second admin that creates a repository and adds the first admin to it.
 	// The first admin then uploads a file to that repository as it's member.
 	t.Run("create an admin user", subtestCreateAdmin)
@@ -108,12 +109,9 @@ func TestIntegration(t *testing.T) {
 	t.Run("create a repository as an admin", subtestPostRepository)
 	t.Run("add secondTestUser to testUser's repository", subtestPostMember)
 	testUser = integrationUser{Username: secondTestUser.Username, Password: secondTestUser.Password, Cookies: secondTestUser.Cookies, RepositoryID: testUser.RepositoryID}
+	t.Run("create a folder", subtestPostFolder)
 	t.Run("upload a file", subtestPostFile)
 	t.Run("delete the account along with its uploads", subtestDeleteUser)
-
-	// Test uploading a file with not enough space in user's account.
-
-	// Test adding a folder and uploading a file to it.
 }
 
 // Clear the database.

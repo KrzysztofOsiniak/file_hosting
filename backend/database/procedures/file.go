@@ -35,3 +35,22 @@ BEGIN
 END
 $$;
 `
+
+const prepareFolder = `CREATE OR REPLACE PROCEDURE
+prepare_folder_(repository_id BIGINT, user_id BIGINT, path TEXT, folder_path TEXT)
+LANGUAGE PLPGSQL
+AS $$
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM repository_ WHERE user_id_ = user_id AND id_ = repository_id) AND
+	NOT EXISTS (SELECT 1 FROM member_ WHERE repository_id_ = repository_id AND user_id_ = user_id AND permission_ = 'full'::permission_enum_) THEN
+        RAISE EXCEPTION 'user does not own the repository or is not a member with enough permissions' USING ERRCODE = '01007';
+    END IF;
+	IF EXISTS (SELECT 1 FROM file_ WHERE repository_id_ = repository_id AND path_ = path) THEN
+		RAISE EXCEPTION 'file already exists' USING ERRCODE = '01007';
+	END IF;
+	IF folder_path <> '' AND NOT EXISTS (SELECT 1 FROM file_ WHERE repository_id_ = repository_id AND path_ = folder_path AND type_ = 'folder'::file_type_enum_) THEN
+		RAISE EXCEPTION 'the folder to insert the path in does not exist' USING ERRCODE = '01007';
+	END IF;
+END
+$$;
+`

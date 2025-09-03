@@ -94,7 +94,7 @@ file_ (
 	path_		   TEXT NOT NULL CHECK (TRIM(path_) <> ''),
 	type_		   file_type_enum_ NOT NULL,
 	size_		   BIGINT NOT NULL,
-	upload_id_	   TEXT NOT NULL,
+	upload_id_	   TEXT,
 	upload_date_   TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS I_file_user_id_ ON file_ (user_id_);
