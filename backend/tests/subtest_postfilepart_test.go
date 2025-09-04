@@ -57,7 +57,7 @@ func subtestPostFilePart(t *testing.T) {
 	if res.StatusCode >= 400 {
 		t.Fatal("upload failed: status", res.Status)
 	}
-	uploadPartsRes := types.UploadStart{}
+	uploadPartsRes := types.UploadStartResponse{}
 	if err := json.NewDecoder(res.Body).Decode(&uploadPartsRes); err != nil {
 		t.Fatal("Error decoding JSON:", err)
 	}
