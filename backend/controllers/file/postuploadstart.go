@@ -3,6 +3,7 @@ package file
 import (
 	db "backend/database"
 	"backend/storage"
+	"backend/types"
 	t "backend/types"
 	"backend/util/config"
 	"context"
@@ -69,7 +70,7 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retry the transaction on serialization failure.
-	var res t.UploadStartResponse
+	var data t.UploadStart
 	var i int
 	for i = 1; i <= 3; i++ {
 		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
@@ -102,7 +103,7 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		res, err = storage.StartUpload(ctx, strconv.Itoa((userID))+"/"+strconv.Itoa(f.RepositoryID)+"/"+f.Key, f.Size)
+		data, err = storage.StartUpload(ctx, strconv.Itoa((userID))+"/"+strconv.Itoa(f.RepositoryID)+"/"+f.Key, f.Size)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -111,13 +112,13 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 
 		if config.AppEnv == "dev" && i == 1 {
 			// Create a serialization failure if in dev env.
-			createSerializationFailure(ctx, f, userID, folderPath, res.UploadID)
+			createSerializationFailure(ctx, f, userID, folderPath, data.UploadID)
 		}
 
 		// Save the file to the db.
 		err = tx.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, @size, @uploadID, NULL) RETURNING id_",
 			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "type": "file", "size": f.Size,
-				"uploadID": res.UploadID}).Scan(&res.FileID)
+				"uploadID": data.UploadID}).Scan(&data.FileID)
 		ok = errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.UniqueViolation {
 			fmt.Println(err)
@@ -156,6 +157,7 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	res := types.UploadStartResponse{UploadParts: data.UploadParts, FileID: data.FileID}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -187,7 +189,7 @@ func createSerializationFailure(ctx context.Context, f uploadFile, userID int, f
 		fmt.Println("Error test read:", err)
 		return
 	}
-	res := t.UploadStartResponse{}
+	res := t.UploadStart{}
 	err = tx2.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, @size, @uploadID, NULL) RETURNING id_",
 		pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key + "s", "type": "file", "size": f.Size,
 			"uploadID": uploadID}).Scan(&res.FileID)

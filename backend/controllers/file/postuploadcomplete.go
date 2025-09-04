@@ -19,16 +19,13 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type uploadCompleteRequest struct {
-	FileKey      string
-	UploadID     string
-	FileID       int
-	RepositoryID int
+type uploadComplete struct {
+	FileID int
 }
 
 func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int)
-	req := uploadCompleteRequest{}
+	req := uploadComplete{}
 	err := json.NewDecoder(io.LimitReader(r.Body, 10*1000)).Decode(&req)
 	if err != nil {
 		w.WriteHeader(http.StatusRequestEntityTooLarge)
@@ -106,6 +103,24 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the file to complete upload for.
+	var (
+		path         string
+		uploadID     string
+		repositoryID int
+	)
+	err = tx.QueryRow(ctx, "SELECT path_, upload_id_, repository_id_ FROM file_ WHERE id_ = @fileID AND user_id_ = @userID AND type_ = 'file'::file_type_enum_",
+		pgx.NamedArgs{"fileID": req.FileID, "userID": userID}).Scan(&path, &uploadID, &repositoryID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	err = tx.Commit(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -113,7 +128,7 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = storage.CompleteUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(req.RepositoryID)+"/"+req.FileKey, req.UploadID, parts)
+	err = storage.CompleteUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(repositoryID)+"/"+path, uploadID, parts)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

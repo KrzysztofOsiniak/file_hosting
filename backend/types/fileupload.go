@@ -1,8 +1,13 @@
 package types
 
+type UploadStart struct {
+	UploadParts []UploadPart
+	UploadID    string
+	FileID      int
+}
+
 type UploadStartResponse struct {
 	UploadParts []UploadPart `json:"uploadParts"`
-	UploadID    string       `json:"uploadID"`
 	FileID      int          `json:"fileID"`
 }
 

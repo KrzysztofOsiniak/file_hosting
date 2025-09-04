@@ -46,14 +46,14 @@ func InitStorage() {
 	}
 }
 
-func StartUpload(ctx context.Context, key string, bytes int) (types.UploadStartResponse, error) {
+func StartUpload(ctx context.Context, key string, bytes int) (types.UploadStart, error) {
 	if storageOption == "local" {
 		return ls.AWS.StartMultipartUpload(ctx, key, bytes)
 	}
 	if storageOption == "cloud" {
 		return cs.AWS.StartMultipartUpload(ctx, key, bytes)
 	}
-	return types.UploadStartResponse{}, nil
+	return types.UploadStart{}, nil
 }
 
 func ResumeUpload(ctx context.Context, key string, uploadID string, bytes int, completeParts []types.CompletePart) ([]types.UploadPart, error) {

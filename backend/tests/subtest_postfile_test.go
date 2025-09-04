@@ -114,7 +114,7 @@ func subtestPostFile(t *testing.T) {
 		}
 	}
 
-	m, err = json.Marshal(uploadCompleteRequest{FileKey: folder + file.Name(), UploadID: uploadPartsRes.UploadID, FileID: uploadPartsRes.FileID, RepositoryID: testUser.RepositoryID})
+	m, err = json.Marshal(uploadCompleteRequest{FileID: uploadPartsRes.FileID})
 	body = io.NopCloser(bytes.NewReader(m))
 	header = http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")

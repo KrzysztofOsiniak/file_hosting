@@ -41,10 +41,7 @@ type uploadFile struct {
 }
 
 type uploadCompleteRequest struct {
-	FileKey      string
-	UploadID     string
-	FileID       int
-	RepositoryID int
+	FileID int
 }
 
 type filePartRequest struct {
