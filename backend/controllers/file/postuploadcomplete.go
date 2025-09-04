@@ -54,7 +54,7 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 	// If commit is not run first this will rollback the transaction.
 	defer tx.Rollback(ctx)
 
-	// Get the parts.
+	// Get the parts and check if user owns this file.
 	rows, err := tx.Query(ctx, "SELECT * FROM get_file_parts_(@fileID, @userID)",
 		pgx.NamedArgs{"fileID": req.FileID, "userID": userID})
 	var pgErr *pgconn.PgError

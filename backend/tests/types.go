@@ -1,6 +1,9 @@
 package test
 
-import "net/http"
+import (
+	"backend/types"
+	"net/http"
+)
 
 type integrationUser struct {
 	Username     string
@@ -24,4 +27,27 @@ type member struct {
 	UserID       int
 	Permission   string
 	RepositoryID int
+}
+
+type uploadPart struct {
+	URL  string
+	Part int
+}
+
+type uploadFile struct {
+	Key          string
+	Size         int
+	RepositoryID int
+}
+
+type uploadCompleteRequest struct {
+	FileKey      string
+	UploadID     string
+	FileID       int
+	RepositoryID int
+}
+
+type filePartRequest struct {
+	types.CompletePart
+	FileID int
 }

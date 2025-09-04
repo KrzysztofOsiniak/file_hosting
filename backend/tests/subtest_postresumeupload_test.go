@@ -13,7 +13,16 @@ import (
 	"testing"
 )
 
-func subtestPostFile(t *testing.T) {
+type resumeFile struct {
+	FileID int
+}
+
+type resumeFileResponse struct {
+	UploadParts []types.UploadPart `json:"uploadParts"`
+}
+
+// Start a multipart upload and upload the parts after resuming the upload.
+func subtestResumeUpload(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
 	if err != nil {
@@ -68,8 +77,34 @@ func subtestPostFile(t *testing.T) {
 		t.Fatal("Server returned an empty user array")
 	}
 
+	// Resume the upload.
+	m, err = json.Marshal(resumeFile{FileID: uploadPartsRes.FileID})
+	body = io.NopCloser(bytes.NewReader(m))
+	header = http.Header{}
+	header.Set("Content-Type", "application/json; charset=utf-8")
+	req = &http.Request{Method: "POST", URL: &url.URL{Scheme: "https", Host: serverHost, Path: "/api/file/upload-resume"}, Proto: "2.0", Header: header, Body: body}
+	if len(testUser.Cookies) == 0 {
+		t.Fatal("Found no user's cookies to be sent")
+	}
+	req.AddCookie(testUser.Cookies[0])
+	res, err = client.Do(req)
+	if err != nil {
+		t.Fatal("upload request failed:", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		t.Fatal("upload failed: status", res.Status)
+	}
+	resumeParts := resumeFileResponse{}
+	if err := json.NewDecoder(res.Body).Decode(&resumeParts); err != nil {
+		t.Fatal("Error decoding JSON:", err)
+	}
+	if len(resumeParts.UploadParts) == 0 {
+		t.Fatal("Server returned an empty user array")
+	}
+
 	partCount, partSize, leftover := fileutil.SplitFile(int(fileInfo.Size()))
-	for i, part := range uploadPartsRes.UploadParts {
+	for i, part := range resumeParts.UploadParts {
 		if i+1 == partCount && leftover != 0 {
 			partSize = leftover
 		}
@@ -92,7 +127,7 @@ func subtestPostFile(t *testing.T) {
 		}
 		etag := awsRes.Header.Get("ETag")
 
-		// Post etag and part number to the server.ETag: etag, Part: part.Part
+		// Post etag and part number to the server.
 		reqPart := filePartRequest{FileID: uploadPartsRes.FileID}
 		reqPart.ETag, reqPart.Part = etag, part.Part
 		m, err = json.Marshal(reqPart)

@@ -112,6 +112,14 @@ func TestIntegration(t *testing.T) {
 	t.Run("create a folder", subtestPostFolder)
 	t.Run("upload a file", subtestPostFile)
 	t.Run("delete the account along with its uploads", subtestDeleteUser)
+	testUser.FolderPath = ""
+
+	// Test resuming an upload.
+	t.Run("create an admin user", subtestCreateAdmin)
+	t.Run("login as created admin", subtestPostLogin)
+	t.Run("create a repository as an admin", subtestPostRepository)
+	t.Run("upload a file after resuming the upload", subtestResumeUpload)
+	t.Run("delete the account along with its uploads", subtestDeleteUser)
 }
 
 // Clear the database.
