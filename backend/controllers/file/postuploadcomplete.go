@@ -23,6 +23,11 @@ type uploadComplete struct {
 	FileID int
 }
 
+// Date will be Unix time in seconds.
+type uploadCompleteResponse struct {
+	Date int `json:"date"`
+}
+
 func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int)
 	req := uploadComplete{}
@@ -136,6 +141,7 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retry the transaction on serialization failure.
+	var date time.Time
 	var i int
 	for i = 1; i <= 3; i++ {
 		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
@@ -148,7 +154,7 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		defer tx.Rollback(ctx)
 
 		// Update the file's date in db from null, to mark the file has been fully uploaded.
-		_, err = tx.Exec(ctx, "UPDATE file_ SET upload_date_ = CURRENT_TIMESTAMP(0) WHERE id_ = $1", req.FileID)
+		err = tx.QueryRow(ctx, "UPDATE file_ SET upload_date_ = CURRENT_TIMESTAMP(0) WHERE id_ = $1 RETURNING upload_date_", req.FileID).Scan(&date)
 		var pgErr *pgconn.PgError
 		ok := errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
@@ -181,6 +187,9 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	res := uploadCompleteResponse{Date: int(date.Unix())}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(res)
 }
