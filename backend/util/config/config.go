@@ -9,6 +9,5 @@ import (
 var (
 	JWTKey         = os.Getenv("JWT_KEY")
 	JWTExpiry      = os.Getenv("JWT_EXPIRY")
-	AppEnv         = os.Getenv("APP_ENV")
 	MinFileSize, _ = strconv.Atoi(os.Getenv("MIN_FILE_SIZE"))
 )

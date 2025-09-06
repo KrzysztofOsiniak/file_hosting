@@ -102,16 +102,20 @@ func TestIntegration(t *testing.T) {
 	// The first admin then uploads a file to that repository as it's member.
 	t.Run("create an admin user", subtestCreateAdmin)
 	t.Run("login as created admin", subtestPostLogin)
-	secondTestUser = integrationUser{Username: testUser.Username, Password: testUser.Password, Cookies: testUser.Cookies}
+	secondTestUser = testUser
 	testUser.Username = "admin2"
 	t.Run("create an admin user", subtestCreateAdmin)
 	t.Run("login as created admin", subtestPostLogin)
 	t.Run("create a repository as an admin", subtestPostRepository)
+	tempUser := testUser
 	t.Run("add secondTestUser to testUser's repository", subtestPostMember)
-	testUser = integrationUser{Username: secondTestUser.Username, Password: secondTestUser.Password, Cookies: secondTestUser.Cookies, RepositoryID: testUser.RepositoryID}
+	testUser = secondTestUser
+	testUser.RepositoryID = tempUser.RepositoryID
 	t.Run("create a folder", subtestPostFolder)
 	t.Run("upload a file", subtestPostFile)
 	t.Run("delete the account along with its uploads", subtestDeleteUser)
+	testUser = tempUser
+	t.Run("delete the first admin", subtestDeleteUser)
 	testUser.FolderPath = ""
 
 	// Test resuming an upload.
@@ -120,6 +124,35 @@ func TestIntegration(t *testing.T) {
 	t.Run("create a repository as an admin", subtestPostRepository)
 	t.Run("upload a file after resuming the upload", subtestResumeUpload)
 	t.Run("delete the account along with its uploads", subtestDeleteUser)
+
+	// Test aborting an upload and deleting an uploaded file.
+	t.Run("create an admin user", subtestCreateAdmin)
+	t.Run("login as created admin", subtestPostLogin)
+	t.Run("create a repository as an admin", subtestPostRepository)
+	t.Run("upload a file part", subtestPostFilePart)
+	t.Run("abort the upload", subtestDeleteAbortUpload)
+	t.Run("upload a file", subtestPostFile)
+	t.Run("delete the file", subtestDeleteFile)
+
+	// Test removing a folder file and all other user's files in it.
+	// Create 2 folders: folder/ and folder/folder/ and upload a file in folder/ and add a second user as the repository's member,
+	// and upload an in progress file in folder/folder/ as that user and delete folder/.
+	t.Run("create folder folder/", subtestPostFolder)
+	folderID := testUser.FolderID
+	t.Run("upload a file", subtestPostFile)
+	t.Run("create folder folder/folder/", subtestPostFolder)
+	tempUser = testUser
+	testUser.Username = "admin3"
+	t.Run("create an admin user", subtestCreateAdmin)
+	t.Run("login as created admin", subtestPostLogin)
+	secondTestUser = testUser
+	testUser = tempUser
+	t.Run("add secondTestUser to testUser's repository", subtestPostMember)
+	testUser = secondTestUser
+	t.Run("upload a file", subtestPostFilePart)
+	testUser.FolderID = folderID
+	t.Run("delete folder/", subtestDeleteFolder)
+	testUser.FolderPath = ""
 }
 
 // Clear the database.

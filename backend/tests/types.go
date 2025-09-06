@@ -11,6 +11,8 @@ type integrationUser struct {
 	Cookies      []*http.Cookie
 	RepositoryID int
 	FolderPath   string
+	FolderID     int
+	FileID       int
 }
 
 type allUsers struct {
@@ -41,7 +43,7 @@ type uploadFile struct {
 }
 
 type uploadCompleteRequest struct {
-	FileID int
+	ID int
 }
 
 type filePartRequest struct {

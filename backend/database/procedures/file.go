@@ -54,3 +54,21 @@ BEGIN
 END
 $$;
 `
+
+// Make sure that the user that wants to delete/modify a file either:
+// - owns the repository the file is in
+// - wants to delete his own file (excluding a folder)
+// - is a member of the repository the file is in with full permission
+const checkPermission = `CREATE OR REPLACE PROCEDURE
+check_permission_(user_id BIGINT, file_id BIGINT)
+LANGUAGE PLPGSQL
+AS $$
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM repository_ JOIN file_ ON repository_.id_ = file_.repository_id_ WHERE repository_.user_id_ = user_id AND file_.id_ = file_id) AND
+	NOT EXISTS (SELECT 1 FROM file_ WHERE file_.id_ = file_id AND user_id_ = user_id AND type_ = 'file'::file_type_enum_) AND
+	NOT EXISTS (SELECT 1 FROM member_ JOIN file_ ON member_.repository_id_ = file_.repository_id_ WHERE member_.user_id_ = user_id AND file_.id_ = file_id AND member_.permission_ = 'full'::permission_enum_) THEN
+        RAISE EXCEPTION 'user does not own the repository or is not a member with enough permissions' USING ERRCODE = '01007';
+    END IF;
+END
+$$;
+`

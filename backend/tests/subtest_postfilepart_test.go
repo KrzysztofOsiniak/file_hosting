@@ -38,9 +38,13 @@ func subtestPostFilePart(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed getting file information", err)
 	}
+	var folder string
+	if testUser.FolderPath != "" {
+		folder = testUser.FolderPath + "/"
+	}
 
 	// Start multipart upload.
-	m, err := json.Marshal(uploadFile{Key: file.Name(), Size: int(fileInfo.Size()), RepositoryID: testUser.RepositoryID})
+	m, err := json.Marshal(uploadFile{Key: folder + file.Name(), Size: int(fileInfo.Size()), RepositoryID: testUser.RepositoryID})
 	body := io.NopCloser(bytes.NewReader(m))
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
@@ -110,4 +114,6 @@ func subtestPostFilePart(t *testing.T) {
 			t.Fatal("upload failed: status", res.Status)
 		}
 	}
+
+	testUser.FileID = uploadPartsRes.FileID
 }

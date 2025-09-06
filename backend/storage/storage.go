@@ -76,13 +76,33 @@ func CompleteUpload(ctx context.Context, key, uploadID string, completedParts []
 	return nil
 }
 
-// Delete all files for a given user.
-func DeleteAllFiles(ctx context.Context, userID string) error {
+// Delete all uploaded and in-progress files that contain a prefix.
+func DeleteAllFiles(ctx context.Context, prefix string) error {
 	if storageOption == "local" {
-		return ls.AWS.DeleteAllFiles(ctx, userID)
+		return ls.AWS.DeleteAllFiles(ctx, prefix)
 	}
 	if storageOption == "cloud" {
-		return cs.AWS.DeleteAllFiles(ctx, userID)
+		return cs.AWS.DeleteAllFiles(ctx, prefix)
+	}
+	return nil
+}
+
+func DeleteFile(ctx context.Context, key string) error {
+	if storageOption == "local" {
+		return ls.AWS.DeleteFile(ctx, key)
+	}
+	if storageOption == "cloud" {
+		return cs.AWS.DeleteFile(ctx, key)
+	}
+	return nil
+}
+
+func AbortUpload(ctx context.Context, key string, uploadID string) error {
+	if storageOption == "local" {
+		return ls.AWS.AbortUpload(ctx, key, uploadID)
+	}
+	if storageOption == "cloud" {
+		return cs.AWS.AbortUpload(ctx, key, uploadID)
 	}
 	return nil
 }

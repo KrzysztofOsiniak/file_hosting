@@ -114,7 +114,7 @@ func subtestPostFile(t *testing.T) {
 		}
 	}
 
-	m, err = json.Marshal(uploadCompleteRequest{FileID: uploadPartsRes.FileID})
+	m, err = json.Marshal(uploadCompleteRequest{ID: uploadPartsRes.FileID})
 	body = io.NopCloser(bytes.NewReader(m))
 	header = http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
@@ -131,4 +131,6 @@ func subtestPostFile(t *testing.T) {
 	if res.StatusCode >= 400 {
 		t.Fatal("upload failed: status", res.Status)
 	}
+
+	testUser.FileID = uploadPartsRes.FileID
 }

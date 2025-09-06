@@ -103,16 +103,11 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		data, err = storage.StartUpload(ctx, strconv.Itoa((userID))+"/"+strconv.Itoa(f.RepositoryID)+"/"+f.Key, f.Size)
+		data, err = storage.StartUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(f.RepositoryID)+"/"+f.Key, f.Size)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
-		}
-
-		if config.AppEnv == "dev" && i == 1 {
-			// Create a serialization failure if in dev env.
-			createSerializationFailure(ctx, f, userID, folderPath, data.UploadID)
 		}
 
 		// Save the file to the db.
@@ -162,50 +157,4 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(res)
-}
-
-func createSerializationFailure(ctx context.Context, f uploadFile, userID int, folderPath string, uploadID string) {
-	conn2, err := db.GetConnection(ctx)
-	defer conn2.Release()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	tx2, err := conn2.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	// If commit is not run first this will rollback the transaction.
-	defer tx2.Rollback(ctx)
-	// Change only the key/path to avoid name collision.
-	_, err = tx2.Exec(ctx, "CALL prepare_file_(@repoID, @userID, @path, @folderPath, @size)",
-		pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key + "s", "folderPath": folderPath, "size": f.Size})
-	if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "01007" {
-		fmt.Println("Error test read:", err)
-		return
-	}
-	if err != nil {
-		fmt.Println("Error test read:", err)
-		return
-	}
-	res := t.UploadStart{}
-	err = tx2.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, @size, @uploadID, NULL) RETURNING id_",
-		pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key + "s", "type": "file", "size": f.Size,
-			"uploadID": uploadID}).Scan(&res.FileID)
-	var pgErr *pgconn.PgError
-	ok := errors.As(err, &pgErr)
-	if ok && pgErr.Code == pgerrcode.UniqueViolation {
-		fmt.Println(err)
-		return
-	}
-	if err != nil {
-		fmt.Println("Error test write:", err)
-		return
-	}
-	err = tx2.Commit(ctx)
-	if err != nil {
-		fmt.Println("Error commiting test:", err)
-		return
-	}
 }

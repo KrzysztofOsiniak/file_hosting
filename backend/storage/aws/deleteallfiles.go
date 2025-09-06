@@ -9,14 +9,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Delete all user's files.
-func (s Storage) DeleteAllFiles(ctx context.Context, userID string) error {
+// Delete all uploaded and in-progress files that contain a prefix.
+func (s Storage) DeleteAllFiles(ctx context.Context, prefix string) error {
 	group, groupCtx := errgroup.WithContext(ctx)
 
 	// Delete all fully uploaded objects.
 	group.Go(func() error {
 		for {
-			listInput := &s3.ListObjectsV2Input{Bucket: &s.Bucket, Prefix: aws.String(userID)}
+			listInput := &s3.ListObjectsV2Input{Bucket: &s.Bucket, Prefix: aws.String(prefix)}
 			listOutput, err := s.Client.ListObjectsV2(groupCtx, listInput)
 			if err != nil {
 				return err
@@ -53,7 +53,7 @@ func (s Storage) DeleteAllFiles(ctx context.Context, userID string) error {
 	// Delete all in-progress uploads.
 	group.Go(func() error {
 		paginator := s3.NewListMultipartUploadsPaginator(s.Client, &s3.ListMultipartUploadsInput{
-			Bucket: &s.Bucket, Prefix: aws.String(userID),
+			Bucket: &s.Bucket, Prefix: aws.String(prefix),
 		})
 
 		for paginator.HasMorePages() {

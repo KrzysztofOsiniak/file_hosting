@@ -17,7 +17,7 @@ import (
 )
 
 type resumeFile struct {
-	FileID int
+	ID int
 }
 
 type resumeFileResponse struct {
@@ -60,7 +60,7 @@ func PostResumeUpload(w http.ResponseWriter, r *http.Request) {
 		repositoryID int
 	)
 	err = tx.QueryRow(ctx, "SELECT path_, upload_id_, size_, repository_id_ FROM file_ WHERE id_ = @fileID AND user_id_ = @userID AND type_ = 'file'::file_type_enum_",
-		pgx.NamedArgs{"fileID": f.FileID, "userID": userID}).Scan(&path, &uploadID, &bytes, &repositoryID)
+		pgx.NamedArgs{"fileID": f.ID, "userID": userID}).Scan(&path, &uploadID, &bytes, &repositoryID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)
@@ -73,7 +73,7 @@ func PostResumeUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the file's uploaded parts.
-	rows, err := tx.Query(ctx, "SELECT part_ FROM file_part_ WHERE file_id_ = $1", f.FileID)
+	rows, err := tx.Query(ctx, "SELECT part_ FROM file_part_ WHERE file_id_ = $1", f.ID)
 	// Scan the rows into an array.
 	completeParts := []types.CompletePart{}
 	for rows.Next() {
@@ -100,7 +100,7 @@ func PostResumeUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Get presigned urls for uploads.
 	res := resumeFileResponse{}
-	res.UploadParts, err = storage.ResumeUpload(ctx, strconv.Itoa((userID))+"/"+strconv.Itoa(repositoryID)+"/"+path, uploadID, bytes, completeParts)
+	res.UploadParts, err = storage.ResumeUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(repositoryID)+"/"+path, uploadID, bytes, completeParts)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

@@ -16,5 +16,8 @@ func InitFile() *chi.Mux {
 	fileRouter.Handle("POST /file-part", m.Auth(http.HandlerFunc(f.PostUploadPart)))
 	fileRouter.Handle("POST /upload-complete", m.Auth(http.HandlerFunc(f.PostUploadComplete)))
 	fileRouter.Handle("POST /upload-resume", m.Auth(http.HandlerFunc(f.PostResumeUpload)))
+	fileRouter.Handle("DELETE /folder/{id}", m.Auth(http.HandlerFunc(f.DeleteFolder)))
+	fileRouter.Handle("DELETE /{id}", m.Auth(http.HandlerFunc(f.DeleteFile)))
+	fileRouter.Handle("DELETE /in-progress/{id}", m.Auth(http.HandlerFunc(f.DeleteInProgress)))
 	return fileRouter
 }

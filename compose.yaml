@@ -15,7 +15,6 @@ services:
       - LOG_DB_URL=postgres://postgres:password@log_database:5432/app # URL=postgres://[user]:[password]@[DB host]/[DB to use]
       - JWT_KEY=better-change-it-in-prod # Secret JWT sign key. Should have appropriate length to be secure.
       - JWT_EXPIRY=1 # JWT expiry time in seconds. Currently has a small value for the tests. Change for prod.
-      - APP_ENV=dev # If dev, serializable transaction failure and retry will be tested.
       - MIN_FILE_SIZE=1 # The smallest amount of bytes an uploaded file can have. Can be important since s3 has overhead when storing files.
       - STORAGE_OPTION=local # Whether to use cloud (aws) or local (seaweedfs) storage. Either set it to cloud or local.
       - LOCAL_BUCKET=file-hosting-app-test # This is not important if STORAGE_OPTION is set to cloud. Sets the bucket name.

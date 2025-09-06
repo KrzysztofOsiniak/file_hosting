@@ -81,10 +81,23 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		// If commit is not run first this will rollback the transaction.
 		defer tx.Rollback(ctx)
 
-		// Delete the user from the database.
-		_, err = tx.Exec(ctx, "DELETE from user_ WHERE id_ = $1", deleteID)
+		// Delete the user's files (not folders) from the database.
+		_, err = tx.Exec(ctx, "DELETE FROM file_ WHERE user_id_ = $1 AND type_ = 'file'::file_type_enum_", deleteID)
 		var pgErr *pgconn.PgError
 		ok := errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// Delete the user from the database.
+		_, err = tx.Exec(ctx, "DELETE FROM user_ WHERE id_ = $1", deleteID)
+		ok = errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
 			// End the transaction now to start another transaction.
 			tx.Rollback(ctx)

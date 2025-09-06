@@ -80,6 +80,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS UX_member_repository_id_user_id_ ON member_ (r
 
 // Size is expressed in bytes.
 // If upload_date_ is NULL, the file is not fully uploaded.
+// user_id_ has a different ON DELETE in order to not delete a folder the user has made in someone's repository that has other user's files in that folder.
 const fileSchema = `
 DO $$BEGIN 
 CREATE TYPE file_type_enum_ AS ENUM ('file', 'folder');
@@ -90,7 +91,7 @@ CREATE TABLE IF NOT EXISTS
 file_ (
 	id_			   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	repository_id_ BIGINT NOT NULL REFERENCES repository_(id_) ON DELETE CASCADE,
-	user_id_ 	   BIGINT NOT NULL REFERENCES user_(id_) ON DELETE CASCADE,
+	user_id_ 	   BIGINT REFERENCES user_(id_) ON DELETE SET NULL,
 	path_		   TEXT NOT NULL CHECK (TRIM(path_) <> ''),
 	type_		   file_type_enum_ NOT NULL,
 	size_		   BIGINT NOT NULL,

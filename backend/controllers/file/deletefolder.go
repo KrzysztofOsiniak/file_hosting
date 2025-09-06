@@ -3,41 +3,41 @@ package file
 import (
 	db "backend/database"
 	"backend/storage"
-	"backend/types"
-	"backend/util/fileutil"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type uploadComplete struct {
-	ID int
+type allFiles struct {
+	Files []fileData
 }
 
-// Date will be Unix time in seconds.
-type uploadCompleteResponse struct {
-	Date int `json:"date"`
+type fileData struct {
+	UserID   int
+	Path     string
+	Date     *time.Time
+	UploadID string
 }
 
-func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
+func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int)
-	req := uploadComplete{}
-	err := json.NewDecoder(io.LimitReader(r.Body, 10*1000)).Decode(&req)
+	idString := chi.URLParam(r, "id")
+	// Check if the id to delete is a number.
+	id, err := strconv.Atoi(idString)
 	if err != nil {
-		w.WriteHeader(http.StatusRequestEntityTooLarge)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// Get a connection from the database and start a transaction.
+	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	conn, err := db.GetConnection(ctx)
@@ -56,9 +56,8 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 	// If commit is not run first this will rollback the transaction.
 	defer tx.Rollback(ctx)
 
-	// Get the parts and check if user owns this file.
-	rows, err := tx.Query(ctx, "SELECT * FROM get_file_parts_(@fileID, @userID)",
-		pgx.NamedArgs{"fileID": req.ID, "userID": userID})
+	// Check if the user can delete this file.
+	_, err = tx.Exec(ctx, "CALL check_permission_(@userID, @fileID)", pgx.NamedArgs{"userID": userID, "fileID": id})
 	var pgErr *pgconn.PgError
 	ok := errors.As(err, &pgErr)
 	if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
@@ -72,50 +71,13 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Scan the rows into an array.
-	parts := []types.CompletePart{}
-	for rows.Next() {
-		part := types.CompletePart{}
-		err = rows.Scan(&part.ETag, &part.Part)
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		parts = append(parts, part)
-	}
-	if rows.Err() != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if len(parts) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	// Get the file size to know how many parts are required and check if that amount matches.
-	var size int
-	err = tx.QueryRow(ctx, "SELECT size_ FROM file_ WHERE id_ = $1", req.ID).Scan(&size)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	partCount, _, _ := fileutil.SplitFile(size)
-	if partCount != len(parts) {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	// Get the file to complete upload for.
+	// Get data needed for later.
 	var (
-		path         string
-		uploadID     string
 		repositoryID int
+		folderPath   string
 	)
-	err = tx.QueryRow(ctx, "SELECT path_, upload_id_, repository_id_ FROM file_ WHERE id_ = @fileID AND user_id_ = @userID AND type_ = 'file'::file_type_enum_",
-		pgx.NamedArgs{"fileID": req.ID, "userID": userID}).Scan(&path, &uploadID, &repositoryID)
+	err = tx.QueryRow(ctx, `SELECT repository_id_, path_ FROM file_ WHERE id_ = @fileID`,
+		pgx.NamedArgs{"userID": userID, "fileID": id}).Scan(&repositoryID, &folderPath)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)
@@ -126,22 +88,64 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	// Delete all files in this folder.
+	// Get all files with this folder's path_ at the start of their own path_ and delete them in a loop later.
+	rows, err := tx.Query(ctx, "SELECT user_id_, path_, upload_date_, upload_id_ FROM file_ WHERE repository_id_ = @repositoryID AND type_ = 'file'::file_type_enum_ AND path_ LIKE @path || '%'",
+		pgx.NamedArgs{"repositoryID": repositoryID, "path": folderPath})
+	if errors.Is(err, pgx.ErrNoRows) {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// Scan the rows into an array.
+	files := allFiles{}
+	for rows.Next() {
+		file := fileData{}
+		err = rows.Scan(&file.UserID, &file.Path, &file.Date, &file.UploadID)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		files.Files = append(files.Files, file)
+	}
+	if rows.Err() != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	err = tx.Commit(ctx)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	err = storage.CompleteUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(repositoryID)+"/"+path, uploadID, parts)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	// Delete files from s3.
+	for _, file := range files.Files {
+		if file.Date == nil {
+			err = storage.AbortUpload(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(repositoryID)+"/"+file.Path, file.UploadID)
+			if err != nil {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			continue
+		}
+		err = storage.DeleteFile(ctx, strconv.Itoa((file.UserID))+"/"+strconv.Itoa(repositoryID)+"/"+file.Path)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Retry the transaction on serialization failure.
-	var date time.Time
 	var i int
 	for i = 1; i <= 3; i++ {
 		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
@@ -153,8 +157,9 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		// If commit is not run first this will rollback the transaction.
 		defer tx.Rollback(ctx)
 
-		// Update the file's date in db from null, to mark the file has been fully uploaded.
-		err = tx.QueryRow(ctx, "UPDATE file_ SET upload_date_ = CURRENT_TIMESTAMP(0) WHERE id_ = $1 RETURNING upload_date_", req.ID).Scan(&date)
+		// Create the repository.
+		_, err = tx.Exec(ctx, "DELETE FROM file_ WHERE repository_id_ = @repositoryID AND (path_ LIKE @path || '/%' OR path_ = @path)",
+			pgx.NamedArgs{"repositoryID": repositoryID, "path": folderPath})
 		var pgErr *pgconn.PgError
 		ok := errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
@@ -187,9 +192,6 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	res := uploadCompleteResponse{Date: int(date.Unix())}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
 }

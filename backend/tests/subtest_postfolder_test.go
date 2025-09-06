@@ -15,6 +15,10 @@ type folder struct {
 	RepositoryID int
 }
 
+type folderResponse struct {
+	ID int
+}
+
 func subtestPostFolder(t *testing.T) {
 	// Get a new SystemCertPool.
 	rootCAs, err := loadCerts()
@@ -33,7 +37,13 @@ func subtestPostFolder(t *testing.T) {
 	// Add secondTestUser to repository.
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	folder := folder{Key: "folder", RepositoryID: testUser.RepositoryID}
+	var folderPath string
+	if testUser.FolderPath == "" {
+		folderPath = "folder"
+	} else {
+		folderPath = "/folder"
+	}
+	folder := folder{Key: testUser.FolderPath + folderPath, RepositoryID: testUser.RepositoryID}
 	marshalled, err := json.Marshal(folder)
 	if err != nil {
 		t.Fatal("Error marshalling body to be sent")
@@ -54,5 +64,14 @@ func subtestPostFolder(t *testing.T) {
 		t.Fatal("Server did not reply with 200 on POST folder")
 	}
 
-	testUser.FolderPath = "folder"
+	folderResponse := folderResponse{}
+	if err := json.NewDecoder(res.Body).Decode(&folderResponse); err != nil {
+		t.Fatal("Error decoding JSON:", err)
+	}
+	if testUser.FolderPath == "" {
+		testUser.FolderPath = "folder"
+	} else {
+		testUser.FolderPath += "/folder"
+	}
+	testUser.FolderID = folderResponse.ID
 }
