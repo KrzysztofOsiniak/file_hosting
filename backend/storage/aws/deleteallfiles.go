@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -10,8 +11,16 @@ import (
 )
 
 // Delete all uploaded and in-progress files that contain a prefix.
+// That prefix is expected to be a file path that ends with "/" for
+// a precise match when deleting a user/repository or folder path.
 func (s Storage) DeleteAllFiles(ctx context.Context, prefix string) error {
 	group, groupCtx := errgroup.WithContext(ctx)
+
+	// Get the last character in the string.
+	lastChar := string([]rune(prefix)[len([]rune(prefix))-1])
+	if lastChar != "/" {
+		return errors.New("aws.DeleteAllFiles() error: prefix needs to end with a slash character (/)")
+	}
 
 	// Delete all fully uploaded objects.
 	group.Go(func() error {

@@ -61,7 +61,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	// If user has files uploaded.
 	if err == nil {
 		// Delete user's uploaded files.
-		err = storage.DeleteAllFiles(ctx, strconv.Itoa(deleteID))
+		err = storage.DeleteAllFiles(ctx, strconv.Itoa(deleteID)+"/")
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
