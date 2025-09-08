@@ -46,7 +46,7 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback(ctx)
 
 	// Check if the user can delete this file.
-	_, err = tx.Exec(ctx, "CALL check_permission_(@userID, @fileID)", pgx.NamedArgs{"userID": userID, "fileID": id})
+	_, err = tx.Exec(ctx, "CALL check_permission_modify_file_(@userID, @fileID)", pgx.NamedArgs{"userID": userID, "fileID": id})
 	var pgErr *pgconn.PgError
 	ok := errors.As(err, &pgErr)
 	if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {

@@ -4,7 +4,6 @@ import (
 	db "backend/database"
 	"backend/storage"
 	"backend/types"
-	t "backend/types"
 	"backend/util/config"
 	"context"
 	"encoding/json"
@@ -70,7 +69,7 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retry the transaction on serialization failure.
-	var data t.UploadStart
+	var data types.UploadStart
 	var i int
 	for i = 1; i <= 3; i++ {
 		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})

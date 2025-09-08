@@ -153,6 +153,13 @@ func TestIntegration(t *testing.T) {
 	testUser.FolderID = folderID
 	t.Run("delete folder/", subtestDeleteFolder)
 	testUser.FolderPath = ""
+
+	// Test deleting a member as the repository owner, and leaving the repository's members as the added member.
+	testUser = tempUser
+	t.Run("delete secondTestUser from members", subtestDeleteMember)
+	t.Run("add secondTestUser to testUser's repository", subtestPostMember)
+	testUser = secondTestUser
+	t.Run("delete secondTestUser from members as secondTestUser", subtestDeleteMember)
 }
 
 // Clear the database.

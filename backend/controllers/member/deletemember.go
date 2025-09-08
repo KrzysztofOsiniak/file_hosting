@@ -1,4 +1,4 @@
-package file
+package member
 
 import (
 	db "backend/database"
@@ -16,7 +16,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func DeleteInProgress(w http.ResponseWriter, r *http.Request) {
+// Delete a repository's member as the repository owner or the member himself, then delete that member's files (without folders).
+func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int)
 	idString := chi.URLParam(r, "id")
 	// Check if the id to delete is a number.
@@ -45,8 +46,8 @@ func DeleteInProgress(w http.ResponseWriter, r *http.Request) {
 	// If commit is not run first this will rollback the transaction.
 	defer tx.Rollback(ctx)
 
-	// Check if the user can delete this file.
-	_, err = tx.Exec(ctx, "CALL check_permission_modify_file_(@userID, @fileID)", pgx.NamedArgs{"userID": userID, "fileID": id})
+	// Check if the user can delete this member.
+	_, err = tx.Exec(ctx, "CALL check_permission_delete_member_(@userID, @memberID)", pgx.NamedArgs{"userID": userID, "memberID": id})
 	var pgErr *pgconn.PgError
 	ok := errors.As(err, &pgErr)
 	if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
@@ -60,14 +61,12 @@ func DeleteInProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the file to abort the upload for.
+	// Get the data to remove the member's files from s3.
 	var (
-		path         string
-		uploadID     string
+		memberUserID int
 		repositoryID int
 	)
-	err = tx.QueryRow(ctx, "SELECT path_, upload_id_, repository_id_ FROM file_ WHERE id_ = @fileID AND upload_date_ IS NULL",
-		pgx.NamedArgs{"fileID": id, "userID": userID}).Scan(&path, &uploadID, &repositoryID)
+	err = tx.QueryRow(ctx, "SELECT user_id_, repository_id_ FROM member_ WHERE id_ = $1", id).Scan(&memberUserID, &repositoryID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)
@@ -85,7 +84,7 @@ func DeleteInProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = storage.AbortUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(repositoryID)+"/"+path, uploadID)
+	err = storage.DeleteFile(ctx, strconv.Itoa(memberUserID)+"/"+strconv.Itoa(repositoryID)+"/")
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -104,11 +103,24 @@ func DeleteInProgress(w http.ResponseWriter, r *http.Request) {
 		// If commit is not run first this will rollback the transaction.
 		defer tx.Rollback(ctx)
 
-		// Delete the in progress upload.
-		_, err = tx.Exec(ctx, "DELETE FROM file_ WHERE id_ = @fileID AND upload_date_ IS NULL",
-			pgx.NamedArgs{"fileID": id})
+		// Delete the member's files (without folders).
+		_, err = tx.Exec(ctx, "DELETE FROM file_ WHERE user_id_ = $1 AND type_ = 'file'::file_type_enum_", memberUserID)
 		var pgErr *pgconn.PgError
 		ok := errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Delete the member.
+		_, err = tx.Exec(ctx, "DELETE FROM member_ WHERE id_ = $1", id)
+		ok = errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
 			// End the transaction now to start another transaction.
 			tx.Rollback(ctx)

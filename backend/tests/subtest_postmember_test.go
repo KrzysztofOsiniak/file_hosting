@@ -19,6 +19,10 @@ type getUser struct {
 	Username string `json:"username"`
 }
 
+type memberResponse struct {
+	ID int
+}
+
 // Get users with username of secondTestUser and the first user to a repository as a member with full permissions.
 func subtestPostMember(t *testing.T) {
 	// Get a new SystemCertPool.
@@ -82,4 +86,9 @@ func subtestPostMember(t *testing.T) {
 	if res.StatusCode != 200 {
 		t.Fatal("Server did not reply with 200 on POST member")
 	}
+	var member memberResponse
+	if err := json.NewDecoder(res.Body).Decode(&member); err != nil {
+		t.Fatal("Error decoding JSON:", err)
+	}
+	secondTestUser.MemberID = member.ID
 }

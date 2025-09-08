@@ -44,6 +44,9 @@ func subtestPostFile(t *testing.T) {
 
 	// Start multipart upload.
 	m, err := json.Marshal(uploadFile{Key: folder + file.Name(), Size: int(fileInfo.Size()), RepositoryID: testUser.RepositoryID})
+	if err != nil {
+		t.Fatal("failed to marshal:", err)
+	}
 	body := io.NopCloser(bytes.NewReader(m))
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
@@ -75,6 +78,9 @@ func subtestPostFile(t *testing.T) {
 		}
 		buffer := make([]byte, partSize)
 		_, err = file.Read(buffer)
+		if err != nil {
+			t.Fatal("failed to read file:", err)
+		}
 		// Upload file part to s3.
 		b := io.NopCloser(bytes.NewReader(buffer))
 		awsReq, err := http.NewRequest("PUT", part.URL, b)
@@ -96,6 +102,9 @@ func subtestPostFile(t *testing.T) {
 		reqPart := filePartRequest{FileID: uploadPartsRes.FileID}
 		reqPart.ETag, reqPart.Part = etag, part.Part
 		m, err = json.Marshal(reqPart)
+		if err != nil {
+			t.Fatal("failed to marshal:", err)
+		}
 		body = io.NopCloser(bytes.NewReader(m))
 		header = http.Header{}
 		header.Set("Content-Type", "application/json; charset=utf-8")
@@ -115,6 +124,9 @@ func subtestPostFile(t *testing.T) {
 	}
 
 	m, err = json.Marshal(uploadCompleteRequest{ID: uploadPartsRes.FileID})
+	if err != nil {
+		t.Fatal("failed to marshal:", err)
+	}
 	body = io.NopCloser(bytes.NewReader(m))
 	header = http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")

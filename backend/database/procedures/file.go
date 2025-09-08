@@ -57,10 +57,10 @@ $$;
 
 // Make sure that the user that wants to delete/modify a file either:
 // - owns the repository the file is in
-// - wants to delete his own file (excluding a folder)
+// - wants to delete/modify his own file (excluding a folder - to not delete other files the user has no permission to)
 // - is a member of the repository the file is in with full permission
-const checkPermission = `CREATE OR REPLACE PROCEDURE
-check_permission_(user_id BIGINT, file_id BIGINT)
+const checkPermissionModifyFile = `CREATE OR REPLACE PROCEDURE
+check_permission_modify_file_(user_id BIGINT, file_id BIGINT)
 LANGUAGE PLPGSQL
 AS $$
 BEGIN
