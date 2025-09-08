@@ -32,11 +32,6 @@ type member struct {
 	RepositoryID int
 }
 
-type uploadPart struct {
-	URL  string
-	Part int
-}
-
 type uploadFile struct {
 	Key          string
 	Size         int
