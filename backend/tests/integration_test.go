@@ -160,6 +160,10 @@ func TestIntegration(t *testing.T) {
 	t.Run("add secondTestUser to testUser's repository", subtestPostMember)
 	testUser = secondTestUser
 	t.Run("delete secondTestUser from members as secondTestUser", subtestDeleteMember)
+
+	// Test deleting user's repository.
+	testUser = tempUser
+	t.Run("delete user's repository", subtestDeleteRepository)
 }
 
 // Clear the database.
