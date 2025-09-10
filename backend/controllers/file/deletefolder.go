@@ -93,11 +93,6 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	// Get all files with this folder's path_ at the start of their own path_ and delete them in a loop later.
 	rows, err := tx.Query(ctx, "SELECT user_id_, path_, upload_date_, upload_id_ FROM file_ WHERE repository_id_ = @repositoryID AND type_ = 'file'::file_type_enum_ AND path_ LIKE @path || '%'",
 		pgx.NamedArgs{"repositoryID": repositoryID, "path": folderPath})
-	if errors.Is(err, pgx.ErrNoRows) {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -137,7 +132,7 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 			}
 			continue
 		}
-		err = storage.DeleteFile(ctx, strconv.Itoa((file.UserID))+"/"+strconv.Itoa(repositoryID)+"/"+file.Path)
+		err = storage.DeleteFile(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(repositoryID)+"/"+file.Path)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)

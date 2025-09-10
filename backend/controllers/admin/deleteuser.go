@@ -16,7 +16,19 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// Delete a user as an admin.
+type allFiles struct {
+	Files []fileData
+}
+
+type fileData struct {
+	UserID       int
+	RepositoryID int
+	Path         string
+	Date         *time.Time
+	UploadID     string
+}
+
+// Delete a user as an admin and delete files in their repositories.
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	deleteID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -35,8 +47,6 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	// Check if user has any files and delete them.
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable, AccessMode: pgx.ReadOnly, DeferrableMode: pgx.Deferrable})
 	if err != nil {
 		fmt.Println(err)
@@ -45,23 +55,51 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	// If commit is not run first this will rollback the transaction.
 	defer tx.Rollback(ctx)
-	var exists bool
-	err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM file_ WHERE user_id_ = $1)", deleteID).Scan(&exists)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+
+	// Get all files in the user's repositories and delete them in a loop later.
+	rows, err := tx.Query(ctx, `SELECT file_.user_id_, file_.repository_id_, file_.path_, file_.upload_date_, file_.upload_id_ FROM file_ JOIN repository_ ON file_.repository_id_ = repository_.id_
+		WHERE repository_.user_id_ = @userID AND file_.type_ = 'file'::file_type_enum_`,
+		pgx.NamedArgs{"userID": deleteID})
+	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	txErr := tx.Commit(ctx)
-	if txErr != nil {
+	// Scan the rows into an array.
+	files := allFiles{}
+	for rows.Next() {
+		file := fileData{}
+		err = rows.Scan(&file.UserID, &file.RepositoryID, &file.Path, &file.Date, &file.UploadID)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		files.Files = append(files.Files, file)
+	}
+	if rows.Err() != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// If user has files uploaded.
-	if err == nil {
-		// Delete user's uploaded files.
-		err = storage.DeleteAllFiles(ctx, strconv.Itoa(deleteID)+"/")
+	err = tx.Commit(ctx)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// Delete files from s3.
+	for _, file := range files.Files {
+		if file.Date == nil {
+			err = storage.AbortUpload(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(file.RepositoryID)+"/"+file.Path, file.UploadID)
+			if err != nil {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			continue
+		}
+		err = storage.DeleteFile(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(file.RepositoryID)+"/"+file.Path)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -81,7 +119,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		// If commit is not run first this will rollback the transaction.
 		defer tx.Rollback(ctx)
 
-		// Delete the user's files (not folders) from the database.
+		// Delete the user's files (not folders) that are not ON DELETE CASCADE from the database.
 		_, err = tx.Exec(ctx, "DELETE FROM file_ WHERE user_id_ = $1 AND type_ = 'file'::file_type_enum_", deleteID)
 		var pgErr *pgconn.PgError
 		ok := errors.As(err, &pgErr)

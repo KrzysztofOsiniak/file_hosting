@@ -77,6 +77,7 @@ func CompleteUpload(ctx context.Context, key, uploadID string, completedParts []
 }
 
 // Delete all uploaded and in-progress files that contain a prefix.
+// Currently unused.
 func DeleteAllFiles(ctx context.Context, prefix string) error {
 	if storageOption == "local" {
 		return ls.AWS.DeleteAllFiles(ctx, prefix)

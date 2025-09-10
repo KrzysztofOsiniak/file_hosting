@@ -16,6 +16,18 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+type allFiles struct {
+	Files []fileData
+}
+
+type fileData struct {
+	UserID   int
+	Path     string
+	Date     *time.Time
+	UploadID string
+}
+
+// Delete all files the user and other users have in the repository.
 func DeleteRepository(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int)
 	idString := chi.URLParam(r, "id")
@@ -58,18 +70,54 @@ func DeleteRepository(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	// Get all files in the repository and delete them in a loop later.
+	rows, err := tx.Query(ctx, "SELECT user_id_, path_, upload_date_, upload_id_ FROM file_ WHERE repository_id_ = $1 AND type_ = 'file'::file_type_enum_", id)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// Scan the rows into an array.
+	files := allFiles{}
+	for rows.Next() {
+		file := fileData{}
+		err = rows.Scan(&file.UserID, &file.Path, &file.Date, &file.UploadID)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		files.Files = append(files.Files, file)
+	}
+	if rows.Err() != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	err = tx.Commit(ctx)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	err = storage.DeleteAllFiles(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(id)+"/")
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	// Delete files from s3.
+	for _, file := range files.Files {
+		if file.Date == nil {
+			err = storage.AbortUpload(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(id)+"/"+file.Path, file.UploadID)
+			if err != nil {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			continue
+		}
+		err = storage.DeleteFile(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(id)+"/"+file.Path)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Retry the transaction on serialization failure.

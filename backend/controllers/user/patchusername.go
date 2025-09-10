@@ -109,8 +109,7 @@ func PatchUsername(w http.ResponseWriter, r *http.Request) {
 
 	if logdb.Pool != nil {
 		// Pass down user's username for deferred logging middleware.
-		var meta *m.RequestMeta
-		meta = r.Context().Value("meta").(*m.RequestMeta)
+		meta := r.Context().Value("meta").(*m.RequestMeta)
 		meta.Username = user.Username
 	}
 }
