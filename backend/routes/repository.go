@@ -13,5 +13,7 @@ func InitRepository() *chi.Mux {
 	repositoryRouter := chi.NewRouter()
 	repositoryRouter.Handle("POST /", m.Auth(http.HandlerFunc(r.PostRepository)))
 	repositoryRouter.Handle("DELETE /{id}", m.Auth(http.HandlerFunc(r.DeleteRepository)))
+	repositoryRouter.Handle("PATCH /name", m.Auth(http.HandlerFunc(r.PatchName)))
+	repositoryRouter.Handle("PATCH /visibility", m.Auth(http.HandlerFunc(r.PatchVisibility)))
 	return repositoryRouter
 }

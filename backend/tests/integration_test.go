@@ -161,6 +161,11 @@ func TestIntegration(t *testing.T) {
 	testUser = secondTestUser
 	t.Run("delete secondTestUser from members as secondTestUser", subtestDeleteMember)
 
+	// Test changing the repository's visibility and name.
+	testUser = tempUser
+	t.Run("patch repository visibility", subtestPatchRepositoryVisibility)
+	t.Run("patch repository name", subtestPatchRepositoryName)
+
 	// Test deleting user's repository.
 	testUser = tempUser
 	t.Run("delete user's repository", subtestDeleteRepository)
