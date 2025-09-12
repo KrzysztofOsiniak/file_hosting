@@ -13,5 +13,6 @@ func InitMember() *chi.Mux {
 	memberRouter := chi.NewRouter()
 	memberRouter.Handle("POST /", m.Auth(http.HandlerFunc(member.PostMember)))
 	memberRouter.Handle("DELETE /{id}", m.Auth(http.HandlerFunc(member.DeleteMember)))
+	memberRouter.Handle("PATCH /permission", m.Auth(http.HandlerFunc(member.PatchPermission)))
 	return memberRouter
 }

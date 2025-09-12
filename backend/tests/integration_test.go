@@ -161,6 +161,13 @@ func TestIntegration(t *testing.T) {
 	testUser = secondTestUser
 	t.Run("delete secondTestUser from members as secondTestUser", subtestDeleteMember)
 
+	// Test changing member's permission and user's storage space.
+	testUser = tempUser
+	secondTestUser.Username = "admin3"
+	t.Run("add secondTestUser to testUser's repository", subtestPostMember)
+	t.Run("change secondTestUser's permission", subtestPatchMemberPermission)
+	t.Run("change secondTestUser's storage space", subtestPatchUserStorageSpace)
+
 	// Test changing the repository's visibility and name.
 	testUser = tempUser
 	t.Run("patch repository visibility", subtestPatchRepositoryVisibility)
