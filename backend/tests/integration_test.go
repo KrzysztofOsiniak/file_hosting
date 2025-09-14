@@ -80,7 +80,6 @@ func TestIntegration(t *testing.T) {
 	// Test creating a repository and uploading a file with transaction retry,
 	// then deleting that file by deleting the account.
 	t.Run("create a repository as an admin", subtestPostRepository)
-	// Test retrying a transaction.
 	t.Run("upload a file", subtestPostFile)
 	t.Run("delete the created admin", subtestDeleteUser)
 	testUser.Username = "guest"
@@ -93,7 +92,6 @@ func TestIntegration(t *testing.T) {
 	t.Run("create an admin user", subtestCreateAdmin)
 	t.Run("login as created admin", subtestPostLogin)
 	t.Run("create a repository as an admin", subtestPostRepository)
-	// Test retrying a transaction.
 	t.Run("upload a file part", subtestPostFilePart)
 	t.Run("delete the created admin", subtestDeleteUser)
 
@@ -172,6 +170,8 @@ func TestIntegration(t *testing.T) {
 	testUser = tempUser
 	t.Run("patch repository visibility", subtestPatchRepositoryVisibility)
 	t.Run("patch repository name", subtestPatchRepositoryName)
+
+	// Upload a file, change its name and upload a new file.
 
 	// Test deleting user's repository.
 	testUser = tempUser

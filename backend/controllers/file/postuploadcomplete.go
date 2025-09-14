@@ -109,13 +109,9 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the file to complete upload for.
-	var (
-		path         string
-		uploadID     string
-		repositoryID int
-	)
-	err = tx.QueryRow(ctx, "SELECT path_, upload_id_, repository_id_ FROM file_ WHERE id_ = @fileID AND user_id_ = @userID AND type_ = 'file'::file_type_enum_",
-		pgx.NamedArgs{"fileID": req.ID, "userID": userID}).Scan(&path, &uploadID, &repositoryID)
+	var uploadID string
+	err = tx.QueryRow(ctx, "SELECT upload_id_ FROM file_ WHERE id_ = @fileID AND user_id_ = @userID AND type_ = 'file'::file_type_enum_",
+		pgx.NamedArgs{"fileID": req.ID, "userID": userID}).Scan(&uploadID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)
@@ -133,7 +129,7 @@ func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = storage.CompleteUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(repositoryID)+"/"+path, uploadID, parts)
+	err = storage.CompleteUpload(ctx, strconv.Itoa(req.ID), uploadID, parts)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

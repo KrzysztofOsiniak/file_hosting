@@ -3,6 +3,7 @@ package repository
 import (
 	db "backend/database"
 	"backend/storage"
+	"backend/types"
 	"context"
 	"errors"
 	"fmt"
@@ -15,17 +16,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
-
-type allFiles struct {
-	Files []fileData
-}
-
-type fileData struct {
-	UserID   int
-	Path     string
-	Date     *time.Time
-	UploadID string
-}
 
 // Delete all files the user and other users have in the repository.
 func DeleteRepository(w http.ResponseWriter, r *http.Request) {
@@ -71,24 +61,29 @@ func DeleteRepository(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get all files in the repository and delete them in a loop later.
-	rows, err := tx.Query(ctx, "SELECT user_id_, path_, upload_date_, upload_id_ FROM file_ WHERE repository_id_ = $1 AND type_ = 'file'::file_type_enum_", id)
+	// Get all files in the repository.
+	rows, err := tx.Query(ctx, "SELECT id_, upload_date_, upload_id_ FROM file_ WHERE repository_id_ = $1 AND type_ = 'file'::file_type_enum_", id)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// Scan the rows into an array.
-	files := allFiles{}
+	// Scan the rows into two arrays for deletion.
+	uploadedFiles := []types.UploadedFile{}
+	inProgressFiles := []types.InProgressFile{}
 	for rows.Next() {
-		file := fileData{}
-		err = rows.Scan(&file.UserID, &file.Path, &file.Date, &file.UploadID)
+		file := types.FileData{}
+		err = rows.Scan(&file.ID, &file.Date, &file.UploadID)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		files.Files = append(files.Files, file)
+		if file.Date == nil {
+			inProgressFiles = append(inProgressFiles, types.InProgressFile{ID: strconv.Itoa(file.ID), UploadID: file.UploadID})
+		} else {
+			uploadedFiles = append(uploadedFiles, types.UploadedFile{ID: strconv.Itoa(file.ID)})
+		}
 	}
 	if rows.Err() != nil {
 		fmt.Println(err)
@@ -102,22 +97,11 @@ func DeleteRepository(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Delete files from s3.
-	for _, file := range files.Files {
-		if file.Date == nil {
-			err = storage.AbortUpload(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(id)+"/"+file.Path, file.UploadID)
-			if err != nil {
-				fmt.Println(err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			continue
-		}
-		err = storage.DeleteFile(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(id)+"/"+file.Path)
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+	err = storage.DeleteAllFiles(ctx, uploadedFiles, inProgressFiles)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	// Retry the transaction on serialization failure.
@@ -155,7 +139,6 @@ func DeleteRepository(w http.ResponseWriter, r *http.Request) {
 		err = tx.Commit(ctx)
 		ok = errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
-			fmt.Println("Retrying transaction...")
 			// End the transaction now to start another transaction.
 			tx.Rollback(ctx)
 			continue

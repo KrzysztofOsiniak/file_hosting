@@ -3,6 +3,7 @@ package member
 import (
 	db "backend/database"
 	"backend/storage"
+	"backend/types"
 	"context"
 	"errors"
 	"fmt"
@@ -77,14 +78,45 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	// Get all the member's files in the repository the member is being deleted from.
+	rows, err := tx.Query(ctx, `SELECT id_, upload_date_, upload_id_ FROM file_ WHERE repository_id_ = @repositoryID AND user_id_ = @userID`,
+		pgx.NamedArgs{"userID": memberUserID, "repositoryID": repositoryID})
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// Scan the rows into two arrays for deletion.
+	uploadedFiles := []types.UploadedFile{}
+	inProgressFiles := []types.InProgressFile{}
+	for rows.Next() {
+		file := types.FileData{}
+		err = rows.Scan(&file.ID, &file.Date, &file.UploadID)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if file.Date == nil {
+			inProgressFiles = append(inProgressFiles, types.InProgressFile{ID: strconv.Itoa(file.ID), UploadID: file.UploadID})
+		} else {
+			uploadedFiles = append(uploadedFiles, types.UploadedFile{ID: strconv.Itoa(file.ID)})
+		}
+	}
+	if rows.Err() != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	err = tx.Commit(ctx)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	err = storage.DeleteFile(ctx, strconv.Itoa(memberUserID)+"/"+strconv.Itoa(repositoryID)+"/")
+	// Delete files from s3.
+	err = storage.DeleteAllFiles(ctx, uploadedFiles, inProgressFiles)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

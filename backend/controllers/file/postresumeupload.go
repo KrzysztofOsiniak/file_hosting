@@ -54,13 +54,11 @@ func PostResumeUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Get the file to resume upload for.
 	var (
-		path         string
-		uploadID     string
-		bytes        int
-		repositoryID int
+		uploadID string
+		bytes    int
 	)
-	err = tx.QueryRow(ctx, "SELECT path_, upload_id_, size_, repository_id_ FROM file_ WHERE id_ = @fileID AND user_id_ = @userID AND type_ = 'file'::file_type_enum_",
-		pgx.NamedArgs{"fileID": f.ID, "userID": userID}).Scan(&path, &uploadID, &bytes, &repositoryID)
+	err = tx.QueryRow(ctx, "SELECT upload_id_, size_ FROM file_ WHERE id_ = @fileID AND user_id_ = @userID AND type_ = 'file'::file_type_enum_",
+		pgx.NamedArgs{"fileID": f.ID, "userID": userID}).Scan(&uploadID, &bytes)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)
@@ -100,7 +98,7 @@ func PostResumeUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Get presigned urls for uploads.
 	res := resumeFileResponse{}
-	res.UploadParts, err = storage.ResumeUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(repositoryID)+"/"+path, uploadID, bytes, completeParts)
+	res.UploadParts, err = storage.ResumeUpload(ctx, strconv.Itoa(f.ID), uploadID, bytes, completeParts)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

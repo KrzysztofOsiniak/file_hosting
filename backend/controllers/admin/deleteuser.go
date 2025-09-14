@@ -3,6 +3,7 @@ package admin
 import (
 	db "backend/database"
 	"backend/storage"
+	"backend/types"
 	"context"
 	"errors"
 	"fmt"
@@ -15,18 +16,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
-
-type allFiles struct {
-	Files []fileData
-}
-
-type fileData struct {
-	UserID       int
-	RepositoryID int
-	Path         string
-	Date         *time.Time
-	UploadID     string
-}
 
 // Delete a user as an admin and delete files in their repositories.
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -56,26 +45,30 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	// If commit is not run first this will rollback the transaction.
 	defer tx.Rollback(ctx)
 
-	// Get all files in the user's repositories and delete them in a loop later.
-	rows, err := tx.Query(ctx, `SELECT file_.user_id_, file_.repository_id_, file_.path_, file_.upload_date_, file_.upload_id_ FROM file_ JOIN repository_ ON file_.repository_id_ = repository_.id_
-		WHERE repository_.user_id_ = @userID AND file_.type_ = 'file'::file_type_enum_`,
-		pgx.NamedArgs{"userID": deleteID})
+	// Get all files the user has and all files in the user's repositories to delete them from s3.
+	rows, err := tx.Query(ctx, `SELECT file_.id_, file_.upload_date_, file_.upload_id_ FROM file_ JOIN repository_ ON file_.repository_id_ = repository_.id_ 
+	WHERE (repository_.user_id_ = @userID OR file_.user_id_ = @userID) AND file_.type_ = 'file'::file_type_enum_`, pgx.NamedArgs{"userID": deleteID})
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// Scan the rows into an array.
-	files := allFiles{}
+	// Scan the rows into two arrays for deletion.
+	uploadedFiles := []types.UploadedFile{}
+	inProgressFiles := []types.InProgressFile{}
 	for rows.Next() {
-		file := fileData{}
-		err = rows.Scan(&file.UserID, &file.RepositoryID, &file.Path, &file.Date, &file.UploadID)
+		file := types.FileData{}
+		err = rows.Scan(&file.ID, &file.Date, &file.UploadID)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		files.Files = append(files.Files, file)
+		if file.Date == nil {
+			inProgressFiles = append(inProgressFiles, types.InProgressFile{ID: strconv.Itoa(file.ID), UploadID: file.UploadID})
+		} else {
+			uploadedFiles = append(uploadedFiles, types.UploadedFile{ID: strconv.Itoa(file.ID)})
+		}
 	}
 	if rows.Err() != nil {
 		fmt.Println(err)
@@ -89,22 +82,11 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Delete files from s3.
-	for _, file := range files.Files {
-		if file.Date == nil {
-			err = storage.AbortUpload(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(file.RepositoryID)+"/"+file.Path, file.UploadID)
-			if err != nil {
-				fmt.Println(err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			continue
-		}
-		err = storage.DeleteFile(ctx, strconv.Itoa(file.UserID)+"/"+strconv.Itoa(file.RepositoryID)+"/"+file.Path)
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+	err = storage.DeleteAllFiles(ctx, uploadedFiles, inProgressFiles)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	// Retry the transaction on serialization failure.

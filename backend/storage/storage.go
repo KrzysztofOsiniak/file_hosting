@@ -76,14 +76,13 @@ func CompleteUpload(ctx context.Context, key, uploadID string, completedParts []
 	return nil
 }
 
-// Delete all uploaded and in-progress files that contain a prefix.
-// Currently unused.
-func DeleteAllFiles(ctx context.Context, prefix string) error {
+// Delete all uploaded and in-progress files that are passed in arrays.
+func DeleteAllFiles(ctx context.Context, uploadedFiles []types.UploadedFile, inProgressFiles []types.InProgressFile) error {
 	if storageOption == "local" {
-		return ls.AWS.DeleteAllFiles(ctx, prefix)
+		return ls.AWS.DeleteAllFiles(ctx, uploadedFiles, inProgressFiles)
 	}
 	if storageOption == "cloud" {
-		return cs.AWS.DeleteAllFiles(ctx, prefix)
+		return cs.AWS.DeleteAllFiles(ctx, uploadedFiles, inProgressFiles)
 	}
 	return nil
 }

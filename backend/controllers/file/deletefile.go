@@ -59,24 +59,6 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	// Get the file to delete the upload.
-	var (
-		path         string
-		repositoryID int
-	)
-	err = tx.QueryRow(ctx, "SELECT path_, repository_id_ FROM file_ WHERE id_ = @fileID AND type_ = 'file'::file_type_enum_",
-		pgx.NamedArgs{"fileID": id}).Scan(&path, &repositoryID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 	err = tx.Commit(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -84,7 +66,7 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = storage.DeleteFile(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(repositoryID)+"/"+path)
+	err = storage.DeleteFile(ctx, strconv.Itoa(id))
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

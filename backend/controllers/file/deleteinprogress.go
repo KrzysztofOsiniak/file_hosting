@@ -61,13 +61,9 @@ func DeleteInProgress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the file to abort the upload for.
-	var (
-		path         string
-		uploadID     string
-		repositoryID int
-	)
-	err = tx.QueryRow(ctx, "SELECT path_, upload_id_, repository_id_ FROM file_ WHERE id_ = @fileID AND upload_date_ IS NULL",
-		pgx.NamedArgs{"fileID": id, "userID": userID}).Scan(&path, &uploadID, &repositoryID)
+	var uploadID string
+	err = tx.QueryRow(ctx, "SELECT upload_id_ FROM file_ WHERE id_ = @fileID AND upload_date_ IS NULL",
+		pgx.NamedArgs{"fileID": id, "userID": userID}).Scan(&uploadID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)
@@ -85,7 +81,7 @@ func DeleteInProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = storage.AbortUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(repositoryID)+"/"+path, uploadID)
+	err = storage.AbortUpload(ctx, strconv.Itoa(id), uploadID)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

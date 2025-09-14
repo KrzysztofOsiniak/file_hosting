@@ -102,17 +102,10 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		data, err = storage.StartUpload(ctx, strconv.Itoa(userID)+"/"+strconv.Itoa(f.RepositoryID)+"/"+f.Key, f.Size)
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
 		// Save the file to the db.
-		err = tx.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, @size, @uploadID, NULL) RETURNING id_",
-			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "type": "file", "size": f.Size,
-				"uploadID": data.UploadID}).Scan(&data.FileID)
+		var fileID int
+		err = tx.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, @size, '', NULL) RETURNING id_",
+			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "type": "file", "size": f.Size}).Scan(&fileID)
 		ok = errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.UniqueViolation {
 			fmt.Println(err)
@@ -120,7 +113,30 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
-			fmt.Println("Retrying transaction...")
+			// End the transaction now to start another transaction.
+			tx.Rollback(ctx)
+			continue
+		}
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		data, err = storage.StartUpload(ctx, strconv.Itoa(fileID), f.Size)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		data.FileID = fileID
+
+		// Update the upload_id_ after starting the upload in s3.
+		var found string
+		err = tx.QueryRow(ctx, "UPDATE file_ SET upload_id_ = @uploadID WHERE id_ = @fileID RETURNING upload_id_",
+			pgx.NamedArgs{"uploadID": data.UploadID, "fileID": fileID}).Scan(&found)
+		ok = errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.SerializationFailure {
 			// End the transaction now to start another transaction.
 			tx.Rollback(ctx)
 			continue
@@ -134,7 +150,6 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 		err = tx.Commit(ctx)
 		ok = errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
-			fmt.Println("Retrying transaction...")
 			// End the transaction now to start another transaction.
 			tx.Rollback(ctx)
 			continue

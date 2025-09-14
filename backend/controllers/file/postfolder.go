@@ -95,7 +95,7 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Save the file to the db.
+		// Save the folder to the db.
 		err = tx.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, 0, NULL, CURRENT_TIMESTAMP(0)) RETURNING id_",
 			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "type": "folder"}).Scan(&res.ID)
 		ok = errors.As(err, &pgErr)
@@ -105,7 +105,6 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
-			fmt.Println("Retrying transaction...")
 			// End the transaction now to start another transaction.
 			tx.Rollback(ctx)
 			continue
@@ -119,7 +118,6 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 		err = tx.Commit(ctx)
 		ok = errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
-			fmt.Println("Retrying transaction...")
 			// End the transaction now to start another transaction.
 			tx.Rollback(ctx)
 			continue
