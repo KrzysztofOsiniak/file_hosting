@@ -19,5 +19,7 @@ func InitFile() *chi.Mux {
 	fileRouter.Handle("DELETE /folder/{id}", m.Auth(http.HandlerFunc(f.DeleteFolder)))
 	fileRouter.Handle("DELETE /{id}", m.Auth(http.HandlerFunc(f.DeleteFile)))
 	fileRouter.Handle("DELETE /in-progress/{id}", m.Auth(http.HandlerFunc(f.DeleteInProgress)))
+	fileRouter.Handle("PATCH /name", m.Auth(http.HandlerFunc(f.PatchFileName)))
+	fileRouter.Handle("PATCH /folder/name", m.Auth(http.HandlerFunc(f.PatchFolderName)))
 	return fileRouter
 }

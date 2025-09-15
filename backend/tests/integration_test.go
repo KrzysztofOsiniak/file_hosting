@@ -171,11 +171,25 @@ func TestIntegration(t *testing.T) {
 	t.Run("patch repository visibility", subtestPatchRepositoryVisibility)
 	t.Run("patch repository name", subtestPatchRepositoryName)
 
-	// Upload a file, change its name and upload a new file.
+	// Upload a file and change its name, then upload a file into a folder and change the files name.
+	testUser.FolderPath = ""
+	t.Run("upload a file", subtestPostFile)
+	t.Run("change the file name", subtestPatchFileName)
+	t.Run("create a folder", subtestPostFolder)
+	t.Run("upload a file", subtestPostFile)
+	t.Run("change the file name", subtestPatchFileName)
 
 	// Test deleting user's repository.
-	testUser = tempUser
 	t.Run("delete user's repository", subtestDeleteRepository)
+
+	// Test uploading 2 files to a folder, then changing that folder's name.
+	testUser.FolderPath = ""
+	t.Run("create a repository as an admin", subtestPostRepository)
+	t.Run("create a folder", subtestPostFolder)
+	t.Run("upload a file", subtestPostFile)
+	t.Run("change the file name", subtestPatchFileName)
+	t.Run("upload a file", subtestPostFile)
+	t.Run("change folder's file name", subtestPatchFolderName)
 }
 
 // Clear the database.
