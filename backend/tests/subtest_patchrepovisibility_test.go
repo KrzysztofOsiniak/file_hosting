@@ -33,7 +33,7 @@ func subtestPatchRepositoryVisibility(t *testing.T) {
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
 	repo := repositoryVisibilityPatch{
-		Visibility: "private",
+		Visibility: "public",
 		ID:         testUser.RepositoryID,
 	}
 	marshalled, err := json.Marshal(repo)

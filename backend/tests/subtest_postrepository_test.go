@@ -81,7 +81,7 @@ func subtestPostRepositoryFail(t *testing.T) {
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json; charset=utf-8")
-	marshalled, err := json.Marshal(repository{Visibility: "public", Name: "testRepoFail"})
+	marshalled, err := json.Marshal(repository{Visibility: "private", Name: "testRepoFail"})
 	if err != nil {
 		t.Fatal("Error marshalling body to be sent")
 	}

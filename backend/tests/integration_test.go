@@ -97,7 +97,7 @@ func TestIntegration(t *testing.T) {
 
 	// Test adding a member and uploading a file in a folder to a repository as that member.
 	// Create an admin, then create a second admin that creates a repository and adds the first admin to it.
-	// The first admin then uploads a file to that repository as it's member.
+	// The first admin then uploads a file to that repository as its member.
 	t.Run("create an admin user", subtestCreateAdmin)
 	t.Run("login as created admin", subtestPostLogin)
 	secondTestUser = testUser
@@ -166,10 +166,23 @@ func TestIntegration(t *testing.T) {
 	t.Run("change secondTestUser's permission", subtestPatchMemberPermission)
 	t.Run("change secondTestUser's storage space", subtestPatchUserStorageSpace)
 
-	// Test changing the repository's visibility and name.
+	// Test getting the private repository as the owner and as a member, change the repository's visibility (to public) and name,
+	// then test getting the repository as a not logged in user and a logged in user that is not the owner nor a member.
+	testUser = tempUser
+	secondTestUser.RepositoryID = testUser.RepositoryID
+	t.Run("get the repository as the owner", subtestGetRepository)
+	testUser = secondTestUser
+	t.Run("get the repository as a member", subtestGetRepository)
 	testUser = tempUser
 	t.Run("patch repository visibility", subtestPatchRepositoryVisibility)
 	t.Run("patch repository name", subtestPatchRepositoryName)
+	// Test logged in/out
+	testUser.Username = "testUser"
+	t.Run("create a user", subtestPostUser)
+	t.Run("get the public repository while logged in", subtestGetRepository)
+	t.Run("log out", subtestPostLogout)
+	t.Run("get the repository while logged out", subtestGetRepository)
+	testUser = tempUser
 
 	// Upload a file and change its name, then upload a file into a folder and change the files name.
 	testUser.FolderPath = ""
@@ -190,6 +203,8 @@ func TestIntegration(t *testing.T) {
 	t.Run("change the file name", subtestPatchFileName)
 	t.Run("upload a file", subtestPostFile)
 	t.Run("change folder's file name", subtestPatchFolderName)
+	t.Run("delete user's repository", subtestDeleteRepository)
+	testUser.FolderPath = ""
 }
 
 // Clear the database.
