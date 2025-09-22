@@ -20,7 +20,7 @@ import (
 // Delete the user account and all files in user's repositories.
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	// Get the userID from the auth middleware.
-	userID := r.Context().Value("id").(int)
+	userID := r.Context().Value(types.ContextKey("id")).(int)
 
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

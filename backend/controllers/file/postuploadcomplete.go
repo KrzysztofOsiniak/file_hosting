@@ -29,7 +29,7 @@ type uploadCompleteResponse struct {
 }
 
 func PostUploadComplete(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("id").(int)
+	userID := r.Context().Value(types.ContextKey("id")).(int)
 	req := uploadComplete{}
 	err := json.NewDecoder(io.LimitReader(r.Body, 10*1000)).Decode(&req)
 	if err != nil {

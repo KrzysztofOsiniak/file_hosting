@@ -55,7 +55,7 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 	if folderPath == "." {
 		folderPath = ""
 	}
-	userID := r.Context().Value("id").(int)
+	userID := r.Context().Value(types.ContextKey("id")).(int)
 
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

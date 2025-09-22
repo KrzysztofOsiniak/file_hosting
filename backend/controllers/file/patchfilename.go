@@ -2,6 +2,7 @@ package file
 
 import (
 	db "backend/database"
+	"backend/types"
 	"context"
 	"encoding/json"
 	"errors"
@@ -45,7 +46,7 @@ func PatchFileName(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	userID := r.Context().Value("id").(int)
+	userID := r.Context().Value(types.ContextKey("id")).(int)
 
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

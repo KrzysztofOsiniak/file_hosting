@@ -4,6 +4,7 @@ import (
 	db "backend/database"
 	logdb "backend/logdatabase"
 	m "backend/middleware"
+	"backend/types"
 	"context"
 	"encoding/json"
 	"errors"
@@ -40,7 +41,7 @@ func PatchUsername(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the userID from the auth middleware.
-	userID := r.Context().Value("id")
+	userID := r.Context().Value(types.ContextKey("id"))
 
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -109,7 +110,7 @@ func PatchUsername(w http.ResponseWriter, r *http.Request) {
 
 	if logdb.Pool != nil {
 		// Pass down user's username for deferred logging middleware.
-		meta := r.Context().Value("meta").(*m.RequestMeta)
+		meta := r.Context().Value(types.ContextKey("meta")).(*m.RequestMeta)
 		meta.Username = user.Username
 	}
 }

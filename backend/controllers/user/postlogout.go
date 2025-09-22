@@ -2,6 +2,7 @@ package user
 
 import (
 	db "backend/database"
+	"backend/types"
 	"context"
 	"errors"
 	"fmt"
@@ -15,8 +16,8 @@ import (
 
 func PostLogout(w http.ResponseWriter, r *http.Request) {
 	// Get the userID and refresh token from the auth middleware.
-	userID := r.Context().Value("id")
-	refreshToken := r.Context().Value("session")
+	userID := r.Context().Value(types.ContextKey("id"))
+	refreshToken := r.Context().Value(types.ContextKey("session"))
 
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

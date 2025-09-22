@@ -3,6 +3,7 @@ package file
 import (
 	db "backend/database"
 	"backend/storage"
+	"backend/types"
 	"context"
 	"encoding/json"
 	"errors"
@@ -30,8 +31,8 @@ func GetDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var userID int
-	if r.Context().Value("id") != nil {
-		userID = r.Context().Value("id").(int)
+	if r.Context().Value(types.ContextKey("id")) != nil {
+		userID = r.Context().Value(types.ContextKey("id")).(int)
 	}
 
 	// Get a connection from the database and start a transaction.

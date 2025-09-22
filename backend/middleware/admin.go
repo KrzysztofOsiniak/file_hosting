@@ -2,6 +2,7 @@ package middleware
 
 import (
 	db "backend/database"
+	"backend/types"
 	"context"
 	"errors"
 	"fmt"
@@ -15,7 +16,7 @@ import (
 func Admin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get the userID from the auth middleware.
-		userID := r.Context().Value("id")
+		userID := r.Context().Value(types.ContextKey("id"))
 
 		// Get a connection from the database and start a transaction.
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

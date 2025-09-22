@@ -2,6 +2,7 @@ package middleware
 
 import (
 	db "backend/database"
+	"backend/types"
 	"backend/util/cookieutil"
 	"context"
 	"errors"
@@ -111,8 +112,8 @@ func OptionalAuth(next http.Handler) http.Handler {
 		}
 
 		// Pass down user's id and refresh token in the context for controllers.
-		ctx := context.WithValue(r.Context(), "id", userID)
-		ctx = context.WithValue(ctx, "session", claims["refreshtoken"].(string))
+		ctx := context.WithValue(r.Context(), types.ContextKey("id"), userID)
+		ctx = context.WithValue(ctx, types.ContextKey("session"), claims["refreshtoken"].(string))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

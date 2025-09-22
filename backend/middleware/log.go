@@ -2,6 +2,7 @@ package middleware
 
 import (
 	logdb "backend/logdatabase"
+	"backend/types"
 	"context"
 
 	"backend/util/logutil"
@@ -45,7 +46,7 @@ func DBRequestLogger(next http.Handler) http.Handler {
 		// Create a struct to be passed in context for a controller to write to it,
 		// then to be logged in middleware.
 		meta := &RequestMeta{}
-		ctx := context.WithValue(r.Context(), "meta", meta)
+		ctx := context.WithValue(r.Context(), types.ContextKey("meta"), meta)
 
 		t1 := time.Now()
 		defer func() {

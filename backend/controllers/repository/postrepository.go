@@ -2,6 +2,7 @@ package repository
 
 import (
 	db "backend/database"
+	"backend/types"
 	"context"
 	"encoding/json"
 	"errors"
@@ -26,7 +27,7 @@ type repositoryResponse struct {
 }
 
 func PostRepository(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("id")
+	userID := r.Context().Value(types.ContextKey("id"))
 	repo := repository{}
 	err := json.NewDecoder(io.LimitReader(r.Body, 1000)).Decode(&repo)
 	if err != nil {

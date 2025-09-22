@@ -4,6 +4,7 @@ import (
 	db "backend/database"
 	logdb "backend/logdatabase"
 	m "backend/middleware"
+	"backend/types"
 	"backend/util/cookieutil"
 	"context"
 	"encoding/json"
@@ -134,7 +135,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 
 	if logdb.Pool != nil {
 		// Pass down user's username and id for deferred logging middleware.
-		meta := r.Context().Value("meta").(*m.RequestMeta)
+		meta := r.Context().Value(types.ContextKey("meta")).(*m.RequestMeta)
 		meta.ID = userID
 		meta.Username = user.Username
 	}

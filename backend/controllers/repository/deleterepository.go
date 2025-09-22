@@ -19,7 +19,7 @@ import (
 
 // Delete all files the user and other users have in the repository.
 func DeleteRepository(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("id").(int)
+	userID := r.Context().Value(types.ContextKey("id")).(int)
 	idString := chi.URLParam(r, "id")
 	// Check if the id to delete is a number.
 	id, err := strconv.Atoi(idString)

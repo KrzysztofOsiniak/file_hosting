@@ -25,7 +25,7 @@ type resumeFileResponse struct {
 }
 
 func PostResumeUpload(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("id").(int)
+	userID := r.Context().Value(types.ContextKey("id")).(int)
 	f := resumeFile{}
 	err := json.NewDecoder(io.LimitReader(r.Body, 1000)).Decode(&f)
 	if err != nil {

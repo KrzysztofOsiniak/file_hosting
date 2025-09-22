@@ -2,6 +2,7 @@ package repository
 
 import (
 	db "backend/database"
+	"backend/types"
 	"context"
 	"encoding/json"
 	"errors"
@@ -31,7 +32,7 @@ func PatchVisibility(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	userID := r.Context().Value("id")
+	userID := r.Context().Value(types.ContextKey("id"))
 
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

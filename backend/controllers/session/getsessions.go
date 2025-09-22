@@ -2,6 +2,7 @@ package user
 
 import (
 	db "backend/database"
+	"backend/types"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,7 +25,7 @@ type session struct {
 // Get all valid sessions for a user.
 func GetSessions(w http.ResponseWriter, r *http.Request) {
 	// Get the userID from the auth middleware.
-	userID := r.Context().Value("id")
+	userID := r.Context().Value(types.ContextKey("id"))
 
 	// Get a connection from the database and start a transaction.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

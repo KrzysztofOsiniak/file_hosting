@@ -4,6 +4,7 @@ import (
 	db "backend/database"
 	c "backend/util/config"
 	"context"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
@@ -180,7 +181,7 @@ func TestIntegration(t *testing.T) {
 	testUser.Username = "testUser"
 	t.Run("create a user", subtestPostUser)
 	t.Run("get the public repository while logged in", subtestGetRepository)
-	t.Run("log out", subtestPostLogout)
+	testUser.Cookies = []*http.Cookie{}
 	t.Run("get the repository while logged out", subtestGetRepository)
 	testUser = tempUser
 

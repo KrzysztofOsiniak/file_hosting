@@ -2,6 +2,7 @@ package user
 
 import (
 	db "backend/database"
+	"backend/types"
 	"context"
 	"encoding/json"
 	"errors"
@@ -42,7 +43,7 @@ func PatchPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the userID from the auth middleware.
-	userID := r.Context().Value("id")
+	userID := r.Context().Value(types.ContextKey("id"))
 
 	// Get a connection from the database.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

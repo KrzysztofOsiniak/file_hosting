@@ -22,7 +22,7 @@ type filePartRequest struct {
 }
 
 func PostUploadPart(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("id")
+	userID := r.Context().Value(types.ContextKey("id"))
 	part := filePartRequest{}
 	err := json.NewDecoder(io.LimitReader(r.Body, 1000)).Decode(&part)
 	if err != nil {
