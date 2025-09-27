@@ -34,6 +34,19 @@ services:
           - action: rebuild
             path: ./backend
             target: /app
+  frontend:
+    container_name: frontend
+    build:
+      context: "frontend/"
+    ports:
+      - "5173:5173" # [Host port]:[Container Port]
+    develop:
+      watch:
+      - action: sync
+        path: ./frontend
+        target: /app
+        ignore:
+          - node_modules
   database:
     container_name: database
     build:
