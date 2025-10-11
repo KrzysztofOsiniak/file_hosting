@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, Link } from "react-router";
 import css from './css/login.module.scss'
 
-function Login() {
+function Signup() {
     let navigate = useNavigate()
 
     const [status, setStatus] = useState("")
@@ -14,7 +14,7 @@ function Login() {
     async function handleLogin(e: React.MouseEvent<HTMLButtonElement>) {
         e.preventDefault()
         setLoading(true)
-        const res = await fetch('/api/user/login', {
+        const res = await fetch('/api/user/', {
             method: 'POST',
             headers: {
             'Content-Type': 'application/json'
@@ -26,8 +26,8 @@ function Login() {
         if (res.status == 200) {
             navigate("/")
         }
-        if (res.status == 404) {
-            setStatus("Username not found.")
+        if (res.status == 409) {
+            setStatus("This username is already taken.")
         }
         if (res.status == 500) {
             setStatus("Unknown server error occurred.")
@@ -42,7 +42,7 @@ function Login() {
     <>
     <div className={css.wrapper}>
         <div className={css.container}>
-            <h1 className={css.loginText}>Log In</h1>
+            <h1 className={css.loginText}>Sign Up</h1>
             <form className={css.form}>
             <span className={css.inputsBox}>
                 <input className={css.input} ref={usernameRef} type="text" 
@@ -54,14 +54,15 @@ function Login() {
             <button disabled={loading} className={!loading ? css.loginButton : css.loginButtonBlocked} 
             onClick={handleLogin}>
                 <span>Log In</span>
-            </button>		
+            </button>			
             </form>
         </div>
-        <span className={css.footer}>Or create an account <Link to="/signup" className={css.link}>here</Link>
-        , no email needed.</span>
+        <span className={css.footer}>Or log in <Link to="/login" className={css.link}>here</Link>
+        , if you already have an account.
+        </span>
     </div>
     </>
     )
 }
 
-export default Login
+export default Signup

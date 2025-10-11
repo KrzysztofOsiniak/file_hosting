@@ -14,13 +14,14 @@
     --bg-bright-color: hsl(210 0% 100%);
     --font-color: hsl(210 0% 10%);
     --font-muted-color: hsl(210 0% 30%);
+    --warning-color: hsl(5 100% 45%);
     background: var(--bg-dark-color);
 }
 #root {
     height: 100dvh;
     width: 100dvw;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     flex-direction: column;
     background: var(--bg-dark-color);
