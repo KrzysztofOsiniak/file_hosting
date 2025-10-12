@@ -24,7 +24,7 @@ function Signup() {
             })
         })
         if (res.status == 200) {
-            navigate("/")
+            navigate("/home")
         }
         if (res.status == 409) {
             setStatus("This username is already taken.")
@@ -35,7 +35,9 @@ function Signup() {
         if (res.status == 400 || res.status == 413) {
             setStatus("Given credentials are too long or empty.")
         }
-        setLoading(false)
+        if (res.status != 200) {
+            setLoading(false)
+        }
     }
 
     return (
@@ -53,7 +55,7 @@ function Signup() {
             <span className={css.statusText}>{status}</span>
             <button disabled={loading} className={!loading ? css.loginButton : css.loginButtonBlocked} 
             onClick={handleLogin}>
-                <span>Log In</span>
+                <span>Sign Up</span>
             </button>			
             </form>
         </div>

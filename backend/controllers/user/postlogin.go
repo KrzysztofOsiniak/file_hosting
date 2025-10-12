@@ -34,11 +34,11 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	user.Username = strings.TrimSpace(user.Username)
 	if utf8.RuneCountInString(user.Username) > 25 || utf8.RuneCountInString(user.Password) > 60 {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 	if utf8.RuneCountInString(user.Username) == 0 || utf8.RuneCountInString(user.Password) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 

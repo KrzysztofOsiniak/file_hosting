@@ -12,6 +12,7 @@ import (
 func InitUser() *chi.Mux {
 	userRouter := chi.NewRouter()
 	userRouter.Handle("GET /users/{username}", http.HandlerFunc(u.GetUsers))
+	userRouter.Handle("GET /account", m.Auth(http.HandlerFunc(u.GetAccount)))
 	userRouter.Handle("POST /", http.HandlerFunc(u.PostUser))
 	userRouter.Handle("POST /login", http.HandlerFunc(u.PostLogin))
 	userRouter.Handle("POST /logout", m.Auth(http.HandlerFunc(u.PostLogout)))

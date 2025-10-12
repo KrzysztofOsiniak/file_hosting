@@ -1,34 +1,37 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, redirect } from "react-router-dom"
-import Login from './login.tsx'
+import Login, { userNotLoggedIn } from './login.tsx'
 import Signup from './signup.tsx'
-import RootHeader from './rootheader.tsx'
+import RootHeader, { loader as rootHeaderLoader } from './rootheader.tsx'
 import Home from './home.tsx'
 
 const router = createBrowserRouter([
     {
         element: <RootHeader/>,
+        loader: rootHeaderLoader,
         children: [
             {
-                path: "",
+                path: "/",
                 loader: function loader() {
                     return redirect('/home')
                 },
             },
             {
-                path: "home",
+                path: "/home",
                 element: <Home/>
-            },
-            {
-                path: "login",
-                element: <Login/>
-            },
-            {
-                path: "signup",
-                element: <Signup/>
             }
         ]
+    },
+    {
+        path: "/login",
+        element: <Login/>,
+        loader: userNotLoggedIn
+    },
+    {
+        path: "/signup",
+        element: <Signup/>,
+        loader: userNotLoggedIn
     }
 ])
 

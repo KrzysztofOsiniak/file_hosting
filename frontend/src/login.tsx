@@ -1,6 +1,14 @@
 import { useState, useRef } from 'react'
 import { useNavigate, Link } from "react-router";
+import { redirect } from "react-router-dom"
 import css from './css/login.module.scss'
+
+export async function userNotLoggedIn() {
+    const res = await fetch("/api/user/account")
+    if(res.status == 200) {
+        return redirect("/home")
+    }
+}
 
 function Login() {
     let navigate = useNavigate()
@@ -24,7 +32,7 @@ function Login() {
             })
         })
         if (res.status == 200) {
-            navigate("/")
+            navigate("/home")
         }
         if (res.status == 404) {
             setStatus("Username not found.")
@@ -32,8 +40,11 @@ function Login() {
         if (res.status == 500) {
             setStatus("Unknown server error occurred.")
         }
-        if (res.status == 400 || res.status == 413) {
+        if (res.status == 422 || res.status == 413) {
             setStatus("Given credentials are too long or empty.")
+        }
+        if (res.status == 400) {
+            setStatus("The password is incorrect.")
         }
         setLoading(false)
     }
