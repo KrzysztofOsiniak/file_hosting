@@ -1,3 +1,16 @@
+.home {
+    width: 4rem;
+    height: 4rem;
+    fill: var(--main-color);
+    cursor: pointer;
+    margin-bottom: 2rem;
+    &:hover {
+        fill: var(--main-dimmed-color);
+    }
+    &:active {
+        fill: var(--main-dark-color);
+    }
+}
 .loginText {
     color: var(--font-color);
     align-self: center;
@@ -86,12 +99,12 @@
     color: var(--font-muted-color);
 }
 .link {
-    color: var(--secondary-color);
+    color: var(--secondary-dark-color);
     &:hover {
-    cursor: pointer;
-    color: var(--main-color);
+        cursor: pointer;
+        color: var(--main-dimmed-color);
     }
     &:active {
-    color: var(--main-dark-color);
+        color: var(--main-dark-color);
     }
 }

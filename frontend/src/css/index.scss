@@ -6,14 +6,17 @@
 }
 :root {
     font-size: 62.5%; /* Set from 16px to 10px for easy rem calculation */
-    --main-color: hsl(49 80% 50%);
-    --main-dimmed-color: hsl(49 80% 45%);
-    --main-dark-color: hsl(49 80% 40%);
-    --secondary-color: hsl(212 80% 50%);
+    --main-color: oklch(86.731% 0.15314 95.622);
+    --main-bright-color: oklch(88.397% 0.15314 95.622);
+    --main-dimmed-color: oklch(81.158% 0.15314 95.622);
+    --main-dark-color: oklch(77% 0.15314 95.622);
+    --secondary-color:oklch(68.153% 0.18669 256.066);
+    --secondary-dimmed-color: oklch(60.485% 0.18538 255.836);
+    --secondary-dark-color: oklch(55.485% 0.18538 255.836);
     --bg-dark-color: hsl(210 0% 90%);
     --bg-bright-color: hsl(210 0% 100%);
     --font-color: hsl(210 0% 10%);
-    --font-muted-color: hsl(210 0% 30%);
+    --font-muted-color: hsl(210 0% 25%);
     --warning-color: hsl(5 100% 45%);
     background: var(--bg-dark-color);
 }
