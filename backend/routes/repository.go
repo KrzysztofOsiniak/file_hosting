@@ -12,6 +12,7 @@ import (
 func InitRepository() *chi.Mux {
 	repositoryRouter := chi.NewRouter()
 	repositoryRouter.Handle("GET /{id}", m.OptionalAuth(http.HandlerFunc(r.GetRepository)))
+	repositoryRouter.Handle("GET /all-repositories", m.Auth(http.HandlerFunc(r.GetAllRepositories)))
 	repositoryRouter.Handle("POST /", m.Auth(http.HandlerFunc(r.PostRepository)))
 	repositoryRouter.Handle("DELETE /{id}", m.Auth(http.HandlerFunc(r.DeleteRepository)))
 	repositoryRouter.Handle("PATCH /name", m.Auth(http.HandlerFunc(r.PatchName)))

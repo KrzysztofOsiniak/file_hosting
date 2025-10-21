@@ -71,6 +71,9 @@
 .profileActive {
     fill: var(--secondary-color) !important;
     &:hover {
+        fill: var(--secondary-dimmed-color) !important;
+    }
+    &:active {
         fill: var(--secondary-dark-color) !important;
     }
 }
