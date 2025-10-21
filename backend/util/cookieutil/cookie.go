@@ -39,6 +39,7 @@ func CreateJWTCookie(userID int, refreshToken string) (*http.Cookie, error) {
 	// Create a cookie to be sent.
 	cookie := http.Cookie{
 		Name:     "file_hosting",
+		Path:     "/api",
 		Value:    tokenString,
 		MaxAge:   60 * 60 * 24 * 14, // 14 days in seconds
 		Secure:   true,
