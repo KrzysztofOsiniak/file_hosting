@@ -80,8 +80,8 @@ func PostLogout(w http.ResponseWriter, r *http.Request) {
 	// Create an empty cookie to unset the current one.
 	cookie := http.Cookie{
 		Name:     "file_hosting",
-		Value:    "",
-		MaxAge:   0,
+		Value:    "/api",
+		MaxAge:   -1,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,

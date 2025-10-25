@@ -1,14 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate, Link } from "react-router";
-import { redirect } from "react-router-dom"
 import css from './css/login.module.scss'
-
-export async function userNotLoggedIn() {
-    const res = await fetch("/api/user/account")
-    if(res.status == 200) {
-        return redirect("/home")
-    }
-}
 
 function Login() {
     let navigate = useNavigate()
@@ -54,7 +46,7 @@ function Login() {
     <div className={css.wrapper}>
         <svg onClick={() => navigate("/home")} className={css.home} viewBox="0 -960 960 960"><path d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z"/></svg>
         <div className={css.container}>
-            <h1 className={css.loginText}>Log In</h1>
+            <h1 className={css.loginText}>Log in</h1>
             <form className={css.form}>
             <span className={css.inputsBox}>
                 <input className={css.input} ref={usernameRef} type="text" 
@@ -65,7 +57,7 @@ function Login() {
             <span className={css.statusText}>{status}</span>
             <button disabled={loading} className={!loading ? css.loginButton : css.loginButtonBlocked} 
             onClick={handleLogin}>
-                <span>Log In</span>
+                <span>Log in</span>
             </button>		
             </form>
         </div>
