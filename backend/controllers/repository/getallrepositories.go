@@ -46,9 +46,9 @@ func GetAllRepositories(w http.ResponseWriter, r *http.Request) {
 
 	// Get owned repositories.
 	var res getAllRepositoriesRes
-	rows, err := tx.Query(ctx, `SELECT r.id_, r.name_, u.username_, COALESCE(SUM(f.size_), 0) FROM repository_ r 
-	JOIN user_ u ON r.user_id_ = u.id_ JOIN file_ f ON r.id_ = f.repository_id_ AND r.user_id_ = f.user_id_ 
-	WHERE r.user_id_ = @userID GROUP BY r.id_, r.name_, u.username_`, pgx.NamedArgs{"userID": userID})
+	rows, err := tx.Query(ctx, `SELECT r.id_, r.name_, u.username_, 
+	COALESCE((SELECT SUM(size_) FROM file_ f WHERE f.repository_id_ = r.id_ AND f.user_id_ = @userID), 0) FROM repository_ r 
+	JOIN user_ u ON r.user_id_ = u.id_ WHERE r.user_id_ = @userID GROUP BY r.id_, r.name_, u.username_`, pgx.NamedArgs{"userID": userID})
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -66,9 +66,10 @@ func GetAllRepositories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get repositories where the user is a member.
-	rows, err = tx.Query(ctx, `SELECT r.id_, r.name_, u.username_, COALESCE(SUM(f.size_), 0) FROM repository_ r 
-	JOIN user_ u ON r.user_id_ = u.id_ JOIN member_ m ON r.id_ = m.repository_id_ JOIN file_ f ON r.id_ = f.repository_id_
-	WHERE m.user_id_ = @userID AND f.user_id_ = @userID GROUP BY r.id_, r.name_, u.username_`,
+	rows, err = tx.Query(ctx, `SELECT r.id_, r.name_, u.username_, 
+	COALESCE((SELECT SUM(size_) FROM file_ f WHERE f.repository_id_ = r.id_), 0) 
+	FROM repository_ r JOIN user_ u ON r.user_id_ = u.id_ JOIN member_ m ON r.id_ = m.repository_id_ 
+	WHERE m.user_id_ = @userID GROUP BY r.id_, r.name_, u.username_`,
 		pgx.NamedArgs{"userID": userID})
 	if err != nil {
 		fmt.Println(err)

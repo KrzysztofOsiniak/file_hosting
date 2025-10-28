@@ -38,7 +38,6 @@
     width: 70rem;
     height: 35rem;
     background-color: var(--bg-bright-color);
-    border-color: black;
     box-shadow: 0rem 0rem 0.6rem black;
 }
 .loginButton {
@@ -86,11 +85,11 @@
     outline: none;
     border: none;
     height: 3rem;
+    width: 23rem;
     text-indent: 1rem;
     border-radius: 2rem;
     font-size: 1.8rem;
     color: var(--font-color);
-    border-color: black;
     box-shadow: 0rem 0rem 0.2rem black;
 }
 .footer {

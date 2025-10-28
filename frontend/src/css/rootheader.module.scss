@@ -13,6 +13,7 @@
     background: var(--bg-dark-color);
     display: grid;
     grid-template-columns: 20% 5% 50% 5% 20%;
+    overflow-y: auto;
 }
 .savedRepositories {
     margin-left: 2rem;
@@ -76,10 +77,11 @@
     }
 }
 .profileOptionsContainerWrapper {
-    grid-column-start: 5;
-    width: 100%;
+    width: 20%;
     height: 100%;
     overflow-y: clip;
+    position: fixed;
+    margin-left: 80%;
 }
 .profileOptionsContainer {
     background-color: var(--bg-bright-color);
@@ -90,7 +92,7 @@
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 .profileOption {
     font-size: 1.6rem;

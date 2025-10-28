@@ -4,8 +4,6 @@ import css from './css/rootheader.module.scss'
 
 import {getUnit, getUnitSize} from "./util.js"
 
-export type UserRole = string | null
-
 function RootHeader() {
     const {username: loadedUsername, role: loadedRole, freeSpace: loadedFreeSpace, space: loadedSpace} = useLoaderData() as 
         {username: string | null, role: string | null, freeSpace: number | null, space: number | null}
@@ -45,7 +43,7 @@ function RootHeader() {
         } 
     </div>
     <div className={css.bodyContainer}>
-        <Outlet context={{role: role}} />
+        <Outlet context={{username: username, role: role}} />
         <div className={css.profileOptionsContainerWrapper}>
             {profileActive ? 
             <div className={css.profileOptionsContainer}>

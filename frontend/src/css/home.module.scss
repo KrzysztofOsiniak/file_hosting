@@ -26,8 +26,224 @@
     width: 80%;
     height: auto;
     min-height: 5rem;
-    max-height: 20rem;
+    max-height: 16rem;
     border-radius: 0.5rem;
     border: solid 0.2rem var(--border-color);
-    overflow: hidden scroll;
+    overflow: hidden auto;
+    padding: 0;
+}
+.ownedRepositoriesContainerElement {
+    width: 100%;
+    height: 3rem;
+    display: flex;
+    flex-shrink: 0;
+}
+.selectable {
+    cursor: pointer;
+    &:hover {
+        background-color: var(--bg-dark-color);
+    }
+}
+.ownedRepositoriesName {
+    width: 60%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: var(--font-color);
+    overflow: auto hidden;
+}
+.ownedRepositoriesUploadSize {
+    width: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.8rem;
+    color: var(--font-color);
+}
+.ownedRepositoriesCreateNewContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 20%;
+}
+.ownedRepositoriesCreateNew {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--secondary-dimmed-color);
+    font-size: 1.8rem;
+    cursor: pointer;
+    &:hover {
+        color: var(--secondary-dark-color);
+        .ownedRepositoriesCreateIcon {
+            fill: var(--secondary-dimmed-color);
+        }
+    }
+}
+.ownedRepositoriesCreateIcon {
+    width: 3rem;
+    height: 3rem;
+    fill: var(--secondary-color);
+}
+.ownedRepositoriesDeleteContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 20%;
+}
+.ownedRepositoriesDelete {
+    color: var(--warning-color);
+    cursor: pointer;
+    font-size: 1.8rem;
+    &:hover {
+        color: var(--warning-dimmed-color);
+    }
+}
+.informationText {
+    display: flex;
+    align-items: center;
+    height: 5rem;
+    font-size: 1.6rem;
+    color: var(--font-muted-color);
+}
+.createRepositoryButton {
+    margin: 2rem 0;
+    font-size: 1.6rem;
+    width: 16rem;
+    height: 4rem;
+    line-height: 2.2;
+    color: var(--font-color);
+    text-decoration: none;
+    border: none;
+    background-color: var(--main-color);
+    text-align: center;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    &:hover {
+        background-color: var(--main-dimmed-color);
+    }
+    &:active {
+        background-color: var(--main-dark-color);
+    }
+}
+.createRepositoryPopupWrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    width: 100dvw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+.createRepositoryPopup {
+    height: 30rem;
+    width: 50rem;
+    background-color: var(--bg-bright-color);
+    box-shadow: 0rem 0rem 0.6rem black;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    z-index: 101;
+}
+.createRepositoryPopupHeader {
+    color: var(--font-color);
+    align-self: center;
+    font-size: 3rem;
+    margin-top: 2rem;
+}
+.formContainer {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+.createRepositoryInput {
+    margin-top: 2rem;
+    outline: none;
+    border: none;
+    height: 3rem;
+    width: 23rem;
+    text-indent: 1rem;
+    border-radius: 2rem;
+    font-size: 1.8rem;
+    color: var(--font-color);
+    box-shadow: 0rem 0rem 0.2rem black;
+}
+.visibilityContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+}
+.visibilityPick {
+    margin-left: 5rem;
+    outline: none;
+    border: none;
+    height: 3rem;
+    width: 12rem;
+    border-radius: 2rem;
+    font-size: 1.8rem;
+    color: var(--font-color);
+    box-shadow: 0rem 0rem 0.2rem black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+}
+.switchVisibilityIcon {
+    height: 4rem;
+    width: 4rem;
+    fill: var(--secondary-color);
+    margin-left: 1rem;
+    cursor: pointer;
+    &:hover {
+        fill: var(--secondary-dimmed-color);
+    }
+    &:active {
+        fill: var(--secondary-dark-color);
+    }
+}
+.createRepositoryStatus {
+    color: var(--font-muted-color);
+    font-size: 1.8rem;
+    height: 2rem;
+    margin-top: 2rem;
+}
+.createRepositoryErrorStatus {
+    color: var(--warning-color) !important;
+}
+.createRepositoryButton {
+    margin-top: 2rem;
+    width: 10rem;
+    height: 5rem;
+    background: var(--main-color);
+    color: var(--font-color);
+    font-size: 1.6rem;
+    cursor: pointer;
+    outline: none;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    &:hover {
+        background: var(--main-dimmed-color);
+    }
+    &:active {
+        background: var(--main-dark-color);
+    }
+}
+.createRepositoryButtonBlocked {
+    margin-top: 2rem;
+    width: 10rem;
+    height: 5rem;
+    background: var(--main-dark-color);
+    color: var(--font-color);
+    font-size: 1.6rem;
+    outline: none;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: bold;
 }
