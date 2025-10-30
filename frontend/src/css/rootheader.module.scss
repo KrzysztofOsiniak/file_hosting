@@ -38,6 +38,12 @@
         fill: var(--secondary-dark-color);
     }
 }
+.homeInactive {
+    fill: var(--icon-color) !important;
+    &:hover {
+        fill: var(--icon-hover-color) !important;
+    }
+}
 .login {
     font-size: 1.8rem;
     width: 8rem;
