@@ -1,7 +1,17 @@
 import { useLoaderData, useOutletContext } from "react-router-dom"
 import css from './css/home.module.scss'
 import type { RepositoryResponse } from "./types"
+import { splitFile } from "./util"
 import { useEffect, useState } from "react"
+
+type UploadStartResponse = {
+    uploadParts: UploadPart[],
+    fileID: number
+}
+type UploadPart = {
+    url: string,
+    part: number
+}
 
 export default function Repository() {
     const repositoryID = useLoaderData()
@@ -19,6 +29,52 @@ export default function Repository() {
     async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         if(e.target.files === null) return
         const file = e.target.files[0]
+        const res = await fetch('/api/file/upload-start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                key: file.name, size: file.size, repositoryID: parseInt(repositoryID)
+            })
+        })
+        if(res.status !== 200) return
+        let {fileID, uploadParts} = await res.json() as UploadStartResponse
+        let {partCount, partSize, leftover} = splitFile(file.size)
+        uploadParts = uploadParts.sort((part1, part2) => part1.part - part2.part)
+        for(let i = 0, start; i < uploadParts.length; i++) {
+            start = i * partSize
+            if(i+1 === partCount && leftover !== 0) {
+                partSize = leftover
+            }
+            const res = await fetch(uploadParts[i].url, {
+                method: 'PUT',
+                body: file.slice(start, start + partSize)
+            })
+            if(res.status !== 200) return
+            const eTag = res.headers.get("ETag")
+            if (eTag === null) return
+            const res2 = await fetch('/api/file/file-part', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fileID: fileID, eTag: eTag, part: uploadParts[i].part
+                })
+            })
+            if(res2.status !== 200) return
+        }
+        const resComplete = await fetch('/api/file/upload-complete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: fileID
+            })
+        })
+        if(resComplete.status !== 200) return
     }
 
     useEffect(() => {
@@ -51,7 +107,7 @@ export default function Repository() {
     <div className={css.mainContainer}>
         {repository.name}
         <input type="file" onChange={handleFileChange}/>
-        {repository.files.map(file => <>{file.path}</>)}
+        {repository.files.map(file => <div key={file.id}>{file.path}</div>)}
     </div>
     </div>
     )

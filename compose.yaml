@@ -88,7 +88,8 @@ services:
       - log_database:/var/lib/postgresql/data
   master:
     container_name: seaweedfs_master
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:4.00
+    user: root
     ports:
       - 9333:9333
       - 19333:19333
@@ -98,7 +99,8 @@ services:
       - ./seaweedfs/master:/data
   volume:
     container_name: seaweedfs_volume
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:4.00
+    user: root
     depends_on:
       - master
     ports:
@@ -109,7 +111,8 @@ services:
       - ./seaweedfs/volume:/data
   filer:
     container_name: seaweedfs_filer
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:4.00
+    user: root
     command: 'filer -master="master:9333" -ip.bind=0.0.0.0 -metricsPort=9326'
     depends_on:
       - master
@@ -127,7 +130,7 @@ services:
     ports:
       - 8333:8333
       - 9327:9327
-    command: 's3 -filer="filer:8888" -ip.bind=0.0.0.0 -config=/etc/s3/s3config.json -metricsPort=9327'
+    command: 's3 -filer="filer:8888" -ip.bind=0.0.0.0 -config=/etc/s3/config.json -metricsPort=9327'
     depends_on:
       - master
       - volume
@@ -139,7 +142,22 @@ services:
       timeout: 5s
       retries: 3
     volumes:
-      - ./seaweedfss3.json:/etc/s3/s3config.json
+      - ./seaweedfss3.json:/etc/s3/config.json
+  s3-init:
+    image: amazon/aws-cli:2.15.10
+    container_name: s3-init
+    depends_on:
+      - s3
+    entrypoint: >
+      /bin/sh -c "
+        aws s3api put-bucket-cors --bucket file-hosting-app-test --cors-configuration file:///cors.json;
+      "
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    volumes:
+      - ./cors.json:/cors.json:ro
 # Below are services for monitoring, uncomment if needed.
   # prometheus:
   #   container_name: prometheus
