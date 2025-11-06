@@ -14,9 +14,10 @@ function RootHeader() {
     const [profileActive, setProfileActive] = useState(false)
     const [loadingLogout, setLoadingLogout] = useState(false)
     const [homePage, setHomePage] = useState(true)
+    const [freeSpace, setFreeSpace] = useState(loadedFreeSpace)
 
-    const freeSpace = useMemo(() => getUnitSize(loadedFreeSpace), [loadedFreeSpace])
-    const freeSpaceUnit = useMemo(() => getUnit(loadedFreeSpace), [loadedFreeSpace])
+    const freeSpaceDisplay = useMemo(() => getUnitSize(freeSpace), [freeSpace])
+    const freeSpaceUnit = useMemo(() => getUnit(freeSpace), [freeSpace])
     const space = useMemo(() => getUnitSize(loadedSpace), [loadedSpace])
     const spaceUnit = useMemo(() => getUnit(loadedSpace), [loadedSpace])
 
@@ -44,13 +45,13 @@ function RootHeader() {
         } 
     </div>
     <div className={css.bodyContainer}>
-        <Outlet context={{username: username, role: role, setHomePage: setHomePage}} />
+        <Outlet context={{username: username, role: role, setHomePage: setHomePage, setFreeSpace: setFreeSpace}} />
         <div className={css.profileOptionsContainerWrapper}>
             {profileActive ? 
             <div className={css.profileOptionsContainer}>
                 <div className={css.profileOption}>Username: {username}</div>
                 <div className={css.profileOption}>Role: {role}</div>
-                <div className={css.profileOption}>Free space: {freeSpace}{freeSpaceUnit}/{space}{spaceUnit}</div>
+                <div className={css.profileOption}>Free space: {freeSpaceDisplay}{freeSpaceUnit}/{space}{spaceUnit}</div>
                 <button disabled={loadingLogout} className={!loadingLogout ? css.logout : css.logoutBlocked} onClick={handleLogout}>Log out</button>
             </div> : <></>}
         </div>

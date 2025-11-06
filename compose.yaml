@@ -17,9 +17,12 @@ services:
       - JWT_EXPIRY=1 # JWT expiry time in seconds. Currently has a small value for the tests. Change for prod.
       - MIN_FILE_SIZE=1 # The smallest amount of bytes an uploaded file can have. Can be important since s3 has overhead when storing files.
       - STORAGE_OPTION=local # Whether to use cloud (aws) or local (seaweedfs) storage. Either set it to cloud or local.
-      - LOCAL_BUCKET=file-hosting-app-test # This is not important if STORAGE_OPTION is set to cloud. Sets the bucket name.
-      - LOCAL_AWS_ACCESS_KEY_ID=test # This is not important if STORAGE_OPTION is set to cloud.
-      - LOCAL_AWS_SECRET_ACCESS_KEY=test # This is not important if STORAGE_OPTION is set to cloud.
+      # These are not important if STORAGE_OPTION is set to cloud.
+      - LOCAL_BACKEND_TEST=0 # Whether to presign s3 requests for docker network for tests. If set to 1, frontend s3 requests will not work.
+      - LOCAL_S3_ENDPOINT=http://localhost:8333 # Used for presigning requests, has to be reachable outside of docker network.
+      - LOCAL_BUCKET=file-hosting-app-test # Sets the bucket name.
+      - LOCAL_AWS_ACCESS_KEY_ID=test
+      - LOCAL_AWS_SECRET_ACCESS_KEY=test
     ports:
       - "8080:8080" # [Host port]:[Container Port]
     depends_on:
@@ -143,21 +146,6 @@ services:
       retries: 3
     volumes:
       - ./seaweedfss3.json:/etc/s3/config.json
-  s3-init:
-    image: amazon/aws-cli:2.15.10
-    container_name: s3-init
-    depends_on:
-      - s3
-    entrypoint: >
-      /bin/sh -c "
-        aws s3api put-bucket-cors --bucket file-hosting-app-test --cors-configuration file:///cors.json;
-      "
-    environment:
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_REGION=us-east-1
-    volumes:
-      - ./cors.json:/cors.json:ro
 # Below are services for monitoring, uncomment if needed.
   # prometheus:
   #   container_name: prometheus

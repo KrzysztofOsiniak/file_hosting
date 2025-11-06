@@ -1,0 +1,41 @@
+.mainShadowWrapper {
+    grid-column-start: 3;
+    width: 100%;
+    height: 100%;
+    overflow-y: clip;
+}
+.mainContainer {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-bright-color);
+    box-shadow: 0rem 0rem 0.6rem black;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.repositoryTitle {
+    margin-top: 2rem;
+    font-size: 2.6rem;
+    color: var(--secondary-dimmed-color);
+}
+.filesContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+    width: 80%;
+    height: auto;
+    min-height: 5rem;
+    max-height: 30rem;
+    border-radius: 0.5rem;
+    border: solid 0.2rem var(--border-color);
+    overflow: hidden auto;
+    padding: 0;
+}
+.filesElement {
+    font-size: 1.6rem;
+    width: 100%;
+    height: 3rem;
+    display: flex;
+    flex-shrink: 0;
+}

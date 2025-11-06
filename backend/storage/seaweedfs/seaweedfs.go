@@ -34,6 +34,8 @@ func InitStorage(sClient *s3.Client, sPresigner *s3.PresignClient, sBucket *stri
 	if secret == "" {
 		log.Fatal("Loaded seaweedfs secret key from environment is not specified")
 	}
+	testMode := os.Getenv("LOCAL_BACKEND_TEST")
+	presignEndpoint := os.Getenv("LOCAL_S3_ENDPOINT")
 
 	// LoadDefaultConfig reads AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID from
 	// environment variables.
@@ -50,7 +52,17 @@ func InitStorage(sClient *s3.Client, sPresigner *s3.PresignClient, sBucket *stri
 		// Important to find docker host.
 		o.UsePathStyle = true
 	})
-	*sPresigner = *s3.NewPresignClient(sClient)
+	sPresignClient := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(presignEndpoint)
+		o.Region = "eu-central-1"
+		// Important to find docker host.
+		o.UsePathStyle = true
+	})
+	if testMode == "1" {
+		*sPresigner = *s3.NewPresignClient(sClient)
+	} else {
+		*sPresigner = *s3.NewPresignClient(sPresignClient)
+	}
 
 	_, err = sClient.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: sBucket,

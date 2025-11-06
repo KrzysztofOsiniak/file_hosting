@@ -1,5 +1,5 @@
 import { useLoaderData, useOutletContext } from "react-router-dom"
-import css from './css/home.module.scss'
+import css from './css/repository.module.scss'
 import type { RepositoryResponse } from "./types"
 import { splitFile } from "./util"
 import { useEffect, useState } from "react"
@@ -15,7 +15,8 @@ type UploadPart = {
 
 export default function Repository() {
     const repositoryID = useLoaderData()
-    const {setHomePage} = useOutletContext<{setHomePage: React.Dispatch<React.SetStateAction<boolean>>}>()
+    const {setHomePage, setFreeSpace} = useOutletContext<{setHomePage: React.Dispatch<React.SetStateAction<boolean>>, 
+        setFreeSpace: React.Dispatch<React.SetStateAction<number>>}>()
 
     const [repository, setRepository] = useState<RepositoryResponse | number | null>(null)
 
@@ -39,6 +40,7 @@ export default function Repository() {
             })
         })
         if(res.status !== 200) return
+        setFreeSpace(space => space - file.size)
         let {fileID, uploadParts} = await res.json() as UploadStartResponse
         let {partCount, partSize, leftover} = splitFile(file.size)
         uploadParts = uploadParts.sort((part1, part2) => part1.part - part2.part)
@@ -96,7 +98,7 @@ export default function Repository() {
         return (
         <div className={css.mainShadowWrapper}>
         <div className={css.mainContainer}>
-            loading
+            <div className={css.repositoryTitle}>Loading...</div>
         </div>
         </div>
         )
@@ -105,9 +107,11 @@ export default function Repository() {
     return (
     <div className={css.mainShadowWrapper}>
     <div className={css.mainContainer}>
-        {repository.name}
-        <input type="file" onChange={handleFileChange}/>
-        {repository.files.map(file => <div key={file.id}>{file.path}</div>)}
+        <div className={css.repositoryTitle}>{repository.name}</div>
+        <div className={css.filesContainer}>
+            <input type="file" onChange={handleFileChange}/>
+            {repository.files.map(file => <div className={css.filesElement} key={file.id}>{file.path}</div>)}
+        </div>
     </div>
     </div>
     )
