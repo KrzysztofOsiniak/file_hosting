@@ -162,7 +162,7 @@ error: number, setRepositories: React.Dispatch<React.SetStateAction<Repositories
     </div>
     {r.repositories.map(repo => repo.ownerUsername === username ? 
     <div onClick={() => navigate(`/repository/${repo.id}`)} className={`${css.ownedRepositoriesContainerElement} ${css.selectable}`} key={repo.id}>
-        <div className={css.ownedRepositoriesName}>{repo.name}</div>
+        <div className={css.ownedRepositoriesName}><div className={css.fontCenter}>{repo.name}</div></div>
         <div className={css.ownedRepositoriesUploadSize}>{getUnitSize(repo.userUploadedSpace)}{getUnit(repo.userUploadedSpace)}</div>
         <div className={css.ownedRepositoriesDeleteContainer}><p onClick={() => handleDeleteRepository(repo.id)} className={css.ownedRepositoriesDelete}>Delete</p></div>
     </div>

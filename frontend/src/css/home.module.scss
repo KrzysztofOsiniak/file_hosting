@@ -1,6 +1,5 @@
 .mainShadowWrapper {
-    grid-column-start: 3;
-    width: 100%;
+    width: 70%;
     height: 100%;
     overflow-y: clip;
 }
@@ -46,18 +45,14 @@
 }
 .ownedRepositoriesName {
     width: 60%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    text-align: center;
     font-size: 1.8rem;
     color: var(--font-color);
     overflow: auto hidden;
 }
 .ownedRepositoriesUploadSize {
     width: 20%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    text-align: center;
     font-size: 1.8rem;
     color: var(--font-color);
 }
@@ -128,7 +123,7 @@
     }
 }
 .createRepositoryPopupWrapper {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     height: 100dvh;
@@ -136,7 +131,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100;
 }
 .createRepositoryPopup {
     height: 30rem;
@@ -147,7 +141,6 @@
     display: flex;
     align-items: center;
     flex-direction: column;
-    z-index: 101;
 }
 .createRepositoryPopupHeader {
     color: var(--font-color);

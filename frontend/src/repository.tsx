@@ -110,9 +110,48 @@ export default function Repository() {
         <div className={css.repositoryTitle}>{repository.name}</div>
         <div className={css.filesContainer}>
             <input type="file" onChange={handleFileChange}/>
-            {repository.files.map(file => <div className={css.filesElement} key={file.id}>{file.path}</div>)}
+            {repository.files.map(file => {
+                if(file.type === "folder") {
+                    return (
+                    <div className={css.filesElement} key={file.id}>
+                        {file.path}
+                    </div>)
+                }
+                if(file.uploadDate === 0) {
+                    return (
+                    <div className={`${css.filesElement} ${css.inProgress}`} key={file.id}>
+                        {file.path}
+                    </div>)
+                }
+                return (
+                <div className={css.filesElement} key={file.id}>
+                    {file.path} {timeAgo(file.uploadDate)}
+                </div>)
+            })}
         </div>
     </div>
     </div>
     )
+}
+
+function timeAgo(epochSeconds: number) {
+    const now = Date.now();
+    const then = epochSeconds * 1000; // convert seconds to milliseconds
+    const diff = now - then;
+
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const weeks = Math.floor(days / 7);
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+
+    if (seconds < 60) return `${seconds} seconds ago`;
+    if (minutes < 60) return `${minutes} minutes ago`;
+    if (hours < 24) return `${hours} hours ago`;
+    if (days < 7) return `${days} days ago`;
+    if (weeks < 5) return `${weeks} weeks ago`;
+    if (months < 12) return `${months} months ago`;
+    return `${years} years ago`;
 }

@@ -46,15 +46,15 @@ function RootHeader() {
     </div>
     <div className={css.bodyContainer}>
         <Outlet context={{username: username, role: role, setHomePage: setHomePage, setFreeSpace: setFreeSpace}} />
+        {profileActive ?
         <div className={css.profileOptionsContainerWrapper}>
-            {profileActive ? 
             <div className={css.profileOptionsContainer}>
                 <div className={css.profileOption}>Username: {username}</div>
                 <div className={css.profileOption}>Role: {role}</div>
                 <div className={css.profileOption}>Free space: {freeSpaceDisplay}{freeSpaceUnit}/{space}{spaceUnit}</div>
                 <button disabled={loadingLogout} className={!loadingLogout ? css.logout : css.logoutBlocked} onClick={handleLogout}>Log out</button>
-            </div> : <></>}
-        </div>
+            </div>
+        </div> : <></>}
     </div>
     </>
     )
