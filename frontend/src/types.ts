@@ -1,7 +1,11 @@
 export type RepositoryResponse = {
     name: string,
     members: Member[],
-    files: File[],
+    files: S3File[],
+    userPermission: "owner" | "none" |"full" | "read"
+}
+export type Repository = {
+    name: string,
     userPermission: "owner" | "none" |"full" | "read"
 }
 type Member = {
@@ -9,7 +13,7 @@ type Member = {
     username: string,
     permission: "" | "full" | "read"
 }
-type File = {
+export type S3File = {
     id: number,
     ownerUsername: string,
     path: string,

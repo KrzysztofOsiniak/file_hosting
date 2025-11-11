@@ -23,7 +23,8 @@ type folder struct {
 }
 
 type folderResponse struct {
-	ID int `json:"id"`
+	ID   int `json:"id"`
+	Date int `json:"date"`
 }
 
 func PostFolder(w http.ResponseWriter, r *http.Request) {
@@ -97,8 +98,9 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Save the folder to the db.
-		err = tx.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, 0, NULL, CURRENT_TIMESTAMP(0)) RETURNING id_",
-			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "type": "folder"}).Scan(&res.ID)
+		var date time.Time
+		err = tx.QueryRow(ctx, "INSERT INTO file_ VALUES (DEFAULT, @repoID, @userID, @path, @type, 0, NULL, CURRENT_TIMESTAMP(0)) RETURNING id_, upload_date_",
+			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "type": "folder"}).Scan(&res.ID, &date)
 		ok = errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.UniqueViolation {
 			fmt.Println(err)
@@ -115,6 +117,7 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		res.Date = int(date.Unix())
 
 		err = tx.Commit(ctx)
 		ok = errors.As(err, &pgErr)

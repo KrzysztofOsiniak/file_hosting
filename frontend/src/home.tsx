@@ -124,7 +124,8 @@ error: number, setRepositories: React.Dispatch<React.SetStateAction<Repositories
         }
         setLoading(false)
     }
-    async function handleDeleteRepository(id: number) {
+    async function handleDeleteRepository(e: React.MouseEvent<HTMLButtonElement>, id: number) {
+        e.stopPropagation()
         const res = await fetch(`/api/repository/${id}`, {
             method: 'DELETE',
         })
@@ -162,9 +163,9 @@ error: number, setRepositories: React.Dispatch<React.SetStateAction<Repositories
     </div>
     {r.repositories.map(repo => repo.ownerUsername === username ? 
     <div onClick={() => navigate(`/repository/${repo.id}`)} className={`${css.ownedRepositoriesContainerElement} ${css.selectable}`} key={repo.id}>
-        <div className={css.ownedRepositoriesName}><div className={css.fontCenter}>{repo.name}</div></div>
+        <div className={css.ownedRepositoriesName} title={repo.name}>{repo.name}</div>
         <div className={css.ownedRepositoriesUploadSize}>{getUnitSize(repo.userUploadedSpace)}{getUnit(repo.userUploadedSpace)}</div>
-        <div className={css.ownedRepositoriesDeleteContainer}><p onClick={() => handleDeleteRepository(repo.id)} className={css.ownedRepositoriesDelete}>Delete</p></div>
+        <div className={css.ownedRepositoriesDeleteContainer}><button onClick={(e) => handleDeleteRepository(e, repo.id)} className={css.ownedRepositoriesDelete}>Delete</button></div>
     </div>
     : <></>)}</>)
     }

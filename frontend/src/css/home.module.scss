@@ -48,13 +48,17 @@
     text-align: center;
     font-size: 1.8rem;
     color: var(--font-color);
-    overflow: auto hidden;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 3rem;
 }
 .ownedRepositoriesUploadSize {
     width: 20%;
     text-align: center;
     font-size: 1.8rem;
     color: var(--font-color);
+    line-height: 3rem;
+    text-wrap: nowrap;
 }
 .ownedRepositoriesCreateNewContainer {
     display: flex;
@@ -72,14 +76,14 @@
     &:hover {
         color: var(--secondary-dark-color);
         .ownedRepositoriesCreateIcon {
-            fill: var(--secondary-dimmed-color);
+            fill: var(--secondary-dark-color);
         }
     }
 }
 .ownedRepositoriesCreateIcon {
     width: 3rem;
     height: 3rem;
-    fill: var(--secondary-color);
+    fill: var(--secondary-dimmed-color);
 }
 .ownedRepositoriesDeleteContainer {
     display: flex;
@@ -91,6 +95,11 @@
     color: var(--warning-color);
     cursor: pointer;
     font-size: 1.8rem;
+    background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	outline: inherit;
     &:hover {
         color: var(--warning-dimmed-color);
     }

@@ -32,11 +32,14 @@
     padding: 0;
 }
 .filesElement {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     width: 100%;
-    height: 3rem;
+    height: 2rem;
     display: flex;
     flex-shrink: 0;
+}
+.folderElement {
+    color: var(--secondary-dimmed-color) !important;
 }
 .selectable {
     cursor: pointer;
@@ -44,6 +47,212 @@
         background-color: var(--bg-dark-color);
     }
 }
+.currentPath {
+    margin-left: 1rem;
+    margin-right: auto;
+}
 .inProgress {
+    color: var(--main-color);
+}
+.fileName {
+    padding-left: 1rem;
+    height: 100%;
+    width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--font-color);
+    line-height: 2rem;
+}
+.username {
+    padding-left: 1rem;
+    height: 100%;
+    width: 20%;
+    overflow: hidden;
     color: var(--font-muted-color);
+    line-height: 2rem;
+}
+.size {
+    padding-left: 1rem;
+    height: 100%;
+    width: 10%;
+    overflow: hidden;
+    color: var(--font-muted-color);
+    line-height: 2rem;
+}
+.uploadDate {
+    padding-left: 1rem;
+    height: 100%;
+    width: 20%;
+    overflow: hidden;
+    color: var(--font-muted-color);
+    line-height: 2rem;
+    white-space: nowrap;
+}
+.uploadContainer {
+    cursor: pointer;
+    color: var(--secondary-dimmed-color);
+    margin-right: 0.5rem;
+    fill: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    &:hover {
+        color: var(--secondary-dark-color);
+        fill: var(--secondary-dark-color);
+    }
+}
+.uploadIcon {
+    width: 2rem;
+    height: 2rem;
+    margin-left: 0.3rem;
+}
+.createFolderContainer {
+    cursor: pointer;
+    color: var(--secondary-dimmed-color);
+    margin-right: 1rem;
+    fill: var(--secondary-color);
+    &:hover {
+        color: var(--secondary-dark-color);
+        fill: var(--secondary-dark-color);
+    }
+}
+.createFolderIcon {
+    width: 2rem;
+    height: 2rem;
+    margin-left: 0.3rem;
+}
+.downloadIcon {
+    width: 2rem;
+    height: 2rem;
+    fill: var(--secondary-color);
+    margin-right: 0.5rem;
+    &:hover {
+        fill: var(--secondary-dark-color);
+    }
+}
+.editIcon {
+    width: 2rem;
+    height: 2rem;
+    fill: var(--secondary-color);
+    margin-right: 0.5rem;
+    &:hover {
+        fill: var(--secondary-dark-color);
+    }
+}
+.deleteIcon {
+    width: 2rem;
+    height: 2rem;
+    fill: var(--warning-color);
+    margin-right: 0.5rem;
+    &:hover {
+        fill: var(--warning-dimmed-color);
+    }
+}
+
+// Create folder popup styles
+.createFolderPopupWrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    width: 100dvw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.createFolderPopup {
+    height: 25rem;
+    width: 50rem;
+    background-color: var(--bg-bright-color);
+    box-shadow: 0rem 0rem 0.6rem black;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+.createFolderPopupHeader {
+    color: var(--font-color);
+    align-self: center;
+    font-size: 3rem;
+    margin-top: 2rem;
+}
+.formContainer {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+.createFolderInput {
+    margin-top: 2rem;
+    outline: none;
+    border: none;
+    height: 3rem;
+    width: 23rem;
+    text-indent: 1rem;
+    border-radius: 2rem;
+    font-size: 1.8rem;
+    color: var(--font-color);
+    box-shadow: 0rem 0rem 0.2rem black;
+}
+.createFolderStatus {
+    color: var(--font-muted-color);
+    font-size: 1.8rem;
+    height: 2rem;
+    margin-top: 2rem;
+}
+.createFolderErrorStatus {
+    color: var(--warning-color) !important;
+}
+.createFolderButton {
+    margin-top: 2rem;
+    width: 10rem;
+    height: 5rem;
+    background: var(--main-color);
+    color: var(--font-color);
+    font-size: 1.6rem;
+    cursor: pointer;
+    outline: none;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    &:hover {
+        background: var(--main-dimmed-color);
+    }
+    &:active {
+        background: var(--main-dark-color);
+    }
+}
+.createFolderButtonBlocked {
+    margin-top: 2rem;
+    width: 10rem;
+    height: 5rem;
+    background: var(--main-dark-color);
+    color: var(--font-color);
+    font-size: 1.6rem;
+    outline: none;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: bold;
+}
+
+// Warning popup styles.
+.warningPopupWrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    width: 100dvw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.warningPopup {
+    height: 25rem;
+    width: 50rem;
+    background-color: var(--bg-bright-color);
+    box-shadow: 0rem 0rem 0.6rem black;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--warning-color);
+    font-size: 2.2rem;
 }
