@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path"
 	"strconv"
 	"time"
 
@@ -92,7 +91,7 @@ func GetDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the download url.
-	url, err := storage.GetDownload(ctx, strconv.Itoa(fileID), path.Base(filePath))
+	url, err := storage.GetDownload(ctx, strconv.Itoa(fileID))
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

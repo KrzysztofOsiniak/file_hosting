@@ -46,12 +46,12 @@ func InitStorage() {
 	}
 }
 
-func StartUpload(ctx context.Context, key string, bytes int) (types.UploadStart, error) {
+func StartUpload(ctx context.Context, key, filename string, bytes int) (types.UploadStart, error) {
 	if storageOption == "local" {
-		return ls.AWS.StartMultipartUpload(ctx, key, bytes)
+		return ls.AWS.StartMultipartUpload(ctx, key, filename, bytes)
 	}
 	if storageOption == "cloud" {
-		return cs.AWS.StartMultipartUpload(ctx, key, bytes)
+		return cs.AWS.StartMultipartUpload(ctx, key, filename, bytes)
 	}
 	return types.UploadStart{}, nil
 }
@@ -107,12 +107,12 @@ func AbortUpload(ctx context.Context, key string, uploadID string) error {
 	return nil
 }
 
-func GetDownload(ctx context.Context, key, fileName string) (string, error) {
+func GetDownload(ctx context.Context, key string) (string, error) {
 	if storageOption == "local" {
-		return ls.AWS.GetDownload(ctx, key, fileName)
+		return ls.AWS.GetDownload(ctx, key)
 	}
 	if storageOption == "cloud" {
-		return cs.AWS.GetDownload(ctx, key, fileName)
+		return cs.AWS.GetDownload(ctx, key)
 	}
 	return "", nil
 }

@@ -10,10 +10,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func (s Storage) StartMultipartUpload(ctx context.Context, key string, bytes int) (types.UploadStart, error) {
+func (s Storage) StartMultipartUpload(ctx context.Context, key, filename string, bytes int) (types.UploadStart, error) {
 	init, err := s.Client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
-		Bucket: aws.String(s.Bucket),
-		Key:    aws.String(key),
+		Bucket:             &s.Bucket,
+		Key:                &key,
+		ContentDisposition: aws.String(`"attachment; filename="download"`),
 	})
 	if err != nil {
 		return types.UploadStart{}, err
