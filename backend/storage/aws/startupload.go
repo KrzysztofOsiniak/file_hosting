@@ -14,7 +14,7 @@ func (s Storage) StartMultipartUpload(ctx context.Context, key, filename string,
 	init, err := s.Client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
 		Bucket:             &s.Bucket,
 		Key:                &key,
-		ContentDisposition: aws.String(`"attachment; filename="download"`),
+		ContentDisposition: aws.String(`attachment; filename="download"`),
 	})
 	if err != nil {
 		return types.UploadStart{}, err
