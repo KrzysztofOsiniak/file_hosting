@@ -21,7 +21,8 @@ type cloudStorage struct {
 }
 
 var (
-	ls = localStorage{AWS: aws.Storage{Client: &s3.Client{}, Presigner: &s3.PresignClient{}},
+	ls = localStorage{
+		AWS:       aws.Storage{Client: &s3.Client{}, Presigner: &s3.PresignClient{}},
 		Seaweedfs: seaweedfs.Storage{Client: &s3.Client{}, Presigner: &s3.PresignClient{}}}
 	cs            = cloudStorage{AWS: aws.Storage{Client: &s3.Client{}, Presigner: &s3.PresignClient{}}}
 	storageOption string
