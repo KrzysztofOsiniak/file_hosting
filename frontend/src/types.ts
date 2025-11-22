@@ -1,3 +1,8 @@
+export type ErrorResponse = {
+    message: ErrorResponseMessageEnum
+}
+type ErrorResponseMessageEnum =
+"User does not have enough space"
 export type RepositoryResponse = {
     name: string,
     members: Member[],

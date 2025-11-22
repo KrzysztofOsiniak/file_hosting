@@ -24,7 +24,7 @@ BEGIN
         RAISE EXCEPTION 'user does not own the repository or is not a member with enough permissions' USING ERRCODE = '01007';
     END IF;
 	IF COALESCE((SELECT SUM(size_) FROM file_ WHERE user_id_ = user_id), 0) + size > (SELECT space_ FROM user_ WHERE id_ = user_id) THEN
-		RAISE EXCEPTION 'user does not have enough space to insert a file' USING ERRCODE = '01007';
+		RAISE EXCEPTION 'user does not have enough space to insert a file' USING ERRCODE = '90000';
 	END IF;
 	IF EXISTS (SELECT 1 FROM file_ WHERE repository_id_ = repository_id AND path_ = path) THEN
 		RAISE EXCEPTION 'file already exists' USING ERRCODE = '01007';

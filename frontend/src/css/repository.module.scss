@@ -59,6 +59,7 @@
     height: 100%;
     width: 50%;
     overflow: hidden;
+    white-space: nowrap;
     text-overflow: ellipsis;
     color: var(--font-color);
     line-height: 3rem;

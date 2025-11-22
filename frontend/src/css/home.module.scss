@@ -49,6 +49,7 @@
     font-size: 1.8rem;
     color: var(--font-color);
     overflow: hidden;
+    white-space: nowrap;
     text-overflow: ellipsis;
     line-height: 3rem;
 }

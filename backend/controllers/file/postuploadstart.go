@@ -2,6 +2,7 @@ package file
 
 import (
 	db "backend/database"
+	"backend/database/errorcodes"
 	"backend/storage"
 	"backend/types"
 	"backend/util/config"
@@ -86,6 +87,13 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "folderPath": folderPath, "size": f.Size})
 		var pgErr *pgconn.PgError
 		ok := errors.As(err, &pgErr)
+		if ok && pgErr.Code == errorcodes.UserHasNoSpace {
+			fmt.Println(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(types.ErrorResponse{Message: types.UserHasNoSpace})
+			return
+		}
 		if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusForbidden)

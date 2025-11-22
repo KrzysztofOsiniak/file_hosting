@@ -1,6 +1,6 @@
 import { useLoaderData, useOutletContext } from "react-router-dom"
 import css from './css/repository.module.scss'
-import type { RepositoryResponse } from "./types"
+import type { ErrorResponse, RepositoryResponse } from "./types"
 import { getUnit, getUnitSize, splitFile } from "./util"
 import { useEffect, useRef, useState } from "react"
 import type { S3File, Repository } from './types'
@@ -49,7 +49,21 @@ export default function Repository() {
                 key: path + file.name, size: file.size, repositoryID: parseInt(repositoryID)
             })
         })
-        if(res.status !== 200) {setWarningPopup(true); setWarningMessage("some error"); return}
+        if(res.status !== 200) {
+            let message = await res.json()
+            .then(body => body as ErrorResponse)
+            .then(body => body.message)
+            .catch(() => null)
+            if(message === null) {
+                setWarningMessage(`error status: ${res.status}`);
+            } else if(message === "User does not have enough space") {
+                setWarningMessage("Not enough space to upload this file");
+            } else {
+                setWarningMessage("unknown error");
+            }
+            setWarningPopup(true); 
+            return
+        }
         setFreeSpace(space => space - file.size)
         let {fileID, uploadParts} = await res.json() as UploadStartResponse
         setFiles(f => {
