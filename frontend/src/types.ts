@@ -1,8 +1,14 @@
 export type ErrorResponse = {
-    message: ErrorResponseMessageEnum
+    message: string
 }
-type ErrorResponseMessageEnum =
-"User does not have enough space"
+export let messages: {userHasNoSpace: string, insufficientPermission: string, 
+fileAlreadyExists: string, containingFolderDoesNotExist: string} = {
+    userHasNoSpace: "User does not have enough space",
+    insufficientPermission: "User has insufficient permission",
+    fileAlreadyExists: "File already exists",
+    containingFolderDoesNotExist: "Containing folder does not exist"
+}
+
 export type RepositoryResponse = {
     name: string,
     members: Member[],

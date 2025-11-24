@@ -94,6 +94,27 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(types.ErrorResponse{Message: types.UserHasNoSpace})
 			return
 		}
+		if ok && pgErr.Code == errorcodes.InsufficientPermission {
+			fmt.Println(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(types.ErrorResponse{Message: types.InsufficientPermission})
+			return
+		}
+		if ok && pgErr.Code == errorcodes.FileAlreadyExists {
+			fmt.Println(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(types.ErrorResponse{Message: types.FileAlreadyExists})
+			return
+		}
+		if ok && pgErr.Code == errorcodes.ContainingFolderDoesNotExist {
+			fmt.Println(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(types.ErrorResponse{Message: types.ContainingFolderDoesNotExist})
+			return
+		}
 		if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusForbidden)

@@ -3,6 +3,7 @@ import css from './css/repository.module.scss'
 import type { ErrorResponse, RepositoryResponse } from "./types"
 import { getUnit, getUnitSize, splitFile } from "./util"
 import { useEffect, useRef, useState } from "react"
+import { messages } from "./types"
 import type { S3File, Repository } from './types'
 
 type UploadStartResponse = {
@@ -55,13 +56,19 @@ export default function Repository() {
             .then(body => body.message)
             .catch(() => null)
             if(message === null) {
-                setWarningMessage(`error status: ${res.status}`);
-            } else if(message === "User does not have enough space") {
-                setWarningMessage("Not enough space to upload this file");
+                setWarningMessage(`error status: ${res.status}`)
+            } else if(message === messages.userHasNoSpace) {
+                setWarningMessage("Not enough space to upload this file")
+            } else if(message === messages.insufficientPermission) {
+                setWarningMessage("You do not have the permission to upload files")
+            } else if(message === messages.fileAlreadyExists) {
+                setWarningMessage("A file or folder with this name already exists in this path")
+            } else if(message === messages.containingFolderDoesNotExist) {
+                setWarningMessage("This folder no longer exists")
             } else {
-                setWarningMessage("unknown error");
+                setWarningMessage("unknown error")
             }
-            setWarningPopup(true); 
+            setWarningPopup(true)
             return
         }
         setFreeSpace(space => space - file.size)
@@ -99,9 +106,18 @@ export default function Repository() {
                 method: 'PUT',
                 body: file.slice(start, start + partSize)
             })
-            if(res.status !== 200) return
+            if(res.status !== 200) {
+                setWarningMessage(`Error uploading the file, status: ${res.status}`);
+                setWarningPopup(true); 
+                return
+            }
+                
             const eTag = res.headers.get("ETag")
-            if (eTag === null) return
+            if (eTag === null) {
+                setWarningMessage(`Could not read the response headers when uploading the file`);
+                setWarningPopup(true); 
+                return
+            }
             const res2 = await fetch('/api/file/file-part', {
                 method: 'POST',
                 headers: {
@@ -111,7 +127,15 @@ export default function Repository() {
                     fileID: fileID, eTag: eTag, part: uploadParts[i].part
                 })
             })
-            if(res2.status !== 200) return
+            if(res2.status !== 200) {
+                if(res2.status === 403) {
+                    setWarningMessage(`This file was deleted`)
+                } else {
+                    setWarningMessage(`Unknown error`)
+                }
+                setWarningPopup(true); 
+                return
+            }
         }
         const resComplete = await fetch('/api/file/upload-complete', {
             method: 'POST',
@@ -122,7 +146,15 @@ export default function Repository() {
                 id: fileID
             })
         })
-        if(resComplete.status !== 200) return
+        if(resComplete.status !== 200) {
+            if(resComplete.status === 403) {
+                setWarningMessage(`This file was deleted`)
+            } else {
+                setWarningMessage(`Unknown error`)
+            }
+            setWarningPopup(true); 
+            return
+        }
         const completeData = await resComplete.json()
         setFiles(f => f!.map((v, _) => {
             if(v.id === fileID) {
@@ -299,6 +331,7 @@ export default function Repository() {
             setRepository({name: data.name, userPermission: data.userPermission})
             setFiles(data.files)
         })
+        .catch()
     }, [])
     useEffect(() => setHomePage(false), [])
 
@@ -313,7 +346,7 @@ export default function Repository() {
         }))
     }, [files])
 
-    if(repository === 404) {
+    if(repository === 404 || repository === 401) {
         return <>Repository not found</>
     }
     if(typeof repository === "number") {
