@@ -19,7 +19,7 @@ services:
       - STORAGE_OPTION=local # Whether to use cloud (aws) or local (seaweedfs) storage. Either set it to cloud or local.
       # These are not important if STORAGE_OPTION is set to cloud.
       - LOCAL_BACKEND_TEST=0 # Whether to presign s3 requests for docker network for tests. If set to 1, frontend s3 requests will not work.
-      - LOCAL_DOCKER_S3_ENDPOINT=http://s3:8333 # Endpoint for backend to reach.
+      - LOCAL_BACKEND_S3_ENDPOINT=http://s3:8333 # Endpoint for backend to reach.
       - LOCAL_BROWSER_S3_ENDPOINT=http://localhost:8333 # Used for presigning requests for browsers to reach this url.
       - LOCAL_BUCKET=file-hosting-app-test # Sets the bucket name.
       - LOCAL_AWS_ACCESS_KEY_ID=test

@@ -35,7 +35,7 @@ func InitStorage(sClient *s3.Client, sPresigner *s3.PresignClient, sBucket *stri
 		log.Fatal("Loaded seaweedfs secret key from environment is not specified")
 	}
 	testMode := os.Getenv("LOCAL_BACKEND_TEST")
-	dockerEndpoint := os.Getenv("LOCAL_DOCKER_S3_ENDPOINT")
+	backendEndpoint := os.Getenv("LOCAL_BACKEND_S3_ENDPOINT")
 	presignEndpoint := os.Getenv("LOCAL_BROWSER_S3_ENDPOINT")
 
 	// LoadDefaultConfig reads AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID from
@@ -50,7 +50,7 @@ func InitStorage(sClient *s3.Client, sPresigner *s3.PresignClient, sBucket *stri
 	// Create 2 clients: one for the backend to communicate with s3 (for example in docker network),
 	// one with the url for a browser to reach.
 	*sClient = *s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(dockerEndpoint)
+		o.BaseEndpoint = aws.String(backendEndpoint)
 		o.Region = "eu-central-1"
 		// Important to find docker host.
 		o.UsePathStyle = true
