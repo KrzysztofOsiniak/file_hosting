@@ -2,6 +2,7 @@ package file
 
 import (
 	db "backend/database"
+	"backend/database/errorcodes"
 	"backend/types"
 	"context"
 	"encoding/json"
@@ -84,6 +85,11 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 		if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if ok && pgErr.Code == errorcodes.FileAlreadyExists {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusConflict)
 			return
 		}
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {

@@ -29,7 +29,11 @@ export default function Repository() {
     const [loading, setLoading] = useState(false)
     const [warningPopup, setWarningPopup] = useState(false)
     const [warningMessage, setWarningMessage] = useState("")
+    const [fileNameChangePopup, setFileNameChangePopup] = useState(false)
+    const [folderNameChangePopup, setFolderNameChangePopup] = useState(false)
+    const [currentlyModifiedFile, setCurrentlyModifiedFile] = useState<S3File | null>(null)
 
+    const nameChange = useRef<HTMLInputElement>(null)
     const folderName = useRef<HTMLInputElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -221,7 +225,7 @@ export default function Repository() {
             return
         }
         if(res.status === 409) {
-            setStatus("You already have a folder with that name")
+            setStatus("A file or folder with this name already exists in this path")
             setLoading(false)
             return
         }
@@ -248,8 +252,121 @@ export default function Repository() {
         a.remove()
     }
 
-    async function handleFileNameChange(e: React.MouseEvent<SVGSVGElement>) {
+    async function handleFileNameChange(file: S3File, e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
+        e.preventDefault()
+        setStatus("")
+        if(loading) return
+        setLoading(true)
+        const newName = nameChange.current!.value
+        const res = await fetch(`/api/file/name`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: file.id, name: newName
+            })
+        })
+        if(res.status === 403) {
+            setStatus("Insufficient permission to change this file")
+            setLoading(false)
+            return
+        }
+        if(res.status === 409) {
+            setStatus("A file or folder with this name already exists in this path")
+            setLoading(false)
+            return
+        }
+        if(res.status === 404) {
+            setStatus("This file does not exist")
+            setLoading(false)
+            return
+        }
+        if(res.status !== 200) {
+            setStatus("Unknown server error")
+            setLoading(false)
+            return
+        }
+        setLoading(false)
+        setFiles(f => f !== null ? f.map(f2 => {
+            if(f2.id === file.id) {
+                if(f2.path.includes("/")) {
+                    f2.path = f2.path.substring(0, f2.path.lastIndexOf('/')+1) + newName
+                } else {
+                    f2.path = newName
+                }
+                return f2
+            }
+            return f2
+        }) : null)
+        setFileNameChangePopup(false)
+    }
+
+    async function handleFolderNameChange(file: S3File, e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
+        e.preventDefault()
+        setStatus("")
+        if(loading) return
+        setLoading(true)
+        const newName = nameChange.current!.value
+        const res = await fetch(`/api/file/folder/name`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: file.id, name: newName
+            })
+        })
+        if(res.status === 403) {
+            setStatus("Insufficient permission to change this folder")
+            setLoading(false)
+            return
+        }
+        if(res.status === 409) {
+            setStatus("A file or folder with this name already exists in this path")
+            setLoading(false)
+            return
+        }
+        if(res.status === 404) {
+            setStatus("This folder does not exist")
+            setLoading(false)
+            return
+        }
+        if(res.status !== 200) {
+            setStatus("Unknown server error")
+            setLoading(false)
+            return
+        }
+        setLoading(false)
+        const oldPath = file.path
+        setFiles(f => f !== null ? f.map(f2 => {
+            if(f2.id === file.id) {
+                if(f2.path.includes("/")) {
+                    f2.path = f2.path.substring(0, f2.path.lastIndexOf('/')+1) + newName
+                } else {
+                    f2.path = newName
+                }
+            }
+            return f2
+        }) : null)
+        setFiles(f => f !== null ? f.map(f2 => {
+            if(f2.path.startsWith(oldPath + "/")) {
+                f2.path = f2.path.replace(oldPath + "/", oldPath.substring(0, oldPath.lastIndexOf('/')+1) + newName + "/")
+            }
+            return f2
+        }) : null)
+        setFolderNameChangePopup(false)
+    }
+
+    function handlePopupClick(e: React.MouseEvent<SVGSVGElement>, file: S3File) {
         e.stopPropagation()
+        if(file.type === "file") {
+            setFileNameChangePopup(b => !b)
+        } else {
+            setFolderNameChangePopup(b => !b)
+        }
+        setCurrentlyModifiedFile(file)
+        setStatus("")
     }
 
     async function handleFileDelete(id: number, e: React.MouseEvent<SVGSVGElement>) {
@@ -410,7 +527,7 @@ export default function Repository() {
                         <div className={css.size}>{getUnitSize(file.size)}{getUnit(file.size)}</div>
                         <div className={css.uploadDate}>{timeAgo(file.uploadDate)}</div>
                         <div className={css.downloadIcon}></div>
-                        <svg onClick={e => handleFileNameChange(e)} className={css.editIcon} viewBox="0 -960 960 960"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
+                        <svg onClick={(e) => handlePopupClick(e, file)} className={css.editIcon} viewBox="0 -960 960 960"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
                         <svg onClick={(e) => handleFolderDelete(file.id, e)} className={css.deleteIcon} viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
                     </div>)
                 }
@@ -427,14 +544,23 @@ export default function Repository() {
                     <div className={css.size}>{getUnitSize(file.size)}{getUnit(file.size)}</div>
                     <div className={css.uploadDate}>{timeAgo(file.uploadDate)}</div>
                     <svg onClick={e => handleDownload(file.id, e)} className={css.downloadIcon} viewBox="0 -960 960 960"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>
-                    <svg onClick={e => handleFileNameChange(e)} className={css.editIcon} viewBox="0 -960 960 960"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
+                    <svg onClick={e => handlePopupClick(e, file)} className={css.editIcon} viewBox="0 -960 960 960"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
                     <svg onClick={e => handleFileDelete(file.id, e)} className={css.deleteIcon} viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
                 </div>)
             })}
         </div>
         {createFolderPopup ? <CreateFolderPopup handleCreateFolderClick={handleCreateFolderClick} folderName={folderName}
         loading={loading} handleCreateFolder={handleCreateFolder} status={status}/> : <></>}
+
         {warningPopup ? <WarningPopup message={warningMessage} setWarningPopup={setWarningPopup}/> : <></>}
+
+        {fileNameChangePopup ? <FileNameChangePopup handleFileNameChange={handleFileNameChange} loading={loading} 
+        setFileNameChangePopup={setFileNameChangePopup} status={status} nameChange={nameChange} 
+        currentlyModifiedFile={currentlyModifiedFile} /> : <></>}
+
+        {folderNameChangePopup ? <FolderNameChangePopup handleFolderNameChange={handleFolderNameChange} loading={loading} 
+        setFolderNameChangePopup={setFolderNameChangePopup} status={status} nameChange={nameChange} 
+        currentlyModifiedFile={currentlyModifiedFile} /> : <></>}
     </div>
     </div>
     )
@@ -468,6 +594,54 @@ function WarningPopup({message, setWarningPopup}: {message: string,setWarningPop
     <div className={css.warningPopup} onClick={(e) => {e.stopPropagation()}}>
         {message}
     </div>
+    </div>
+    )
+}
+
+function FileNameChangePopup({handleFileNameChange, loading, setFileNameChangePopup, status, nameChange, currentlyModifiedFile}: 
+    {handleFileNameChange: (file: S3File, e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void, loading: boolean, 
+        setFileNameChangePopup: React.Dispatch<React.SetStateAction<boolean>>, 
+        status: string, nameChange: React.RefObject<HTMLInputElement | null>, currentlyModifiedFile: S3File | null
+    }) {
+    return (
+    <div className={css.createFolderPopupWrapper} onClick={() => setFileNameChangePopup(b => !b)}>
+            <div className={css.createFolderPopup} onClick={(e) => {e.stopPropagation()}}>
+                <div className={css.createFolderPopupHeader}>Change file name</div>
+                <form className={css.formContainer}>
+                    <input className={css.createFolderInput} ref={nameChange} type="text" placeholder="Name" autoComplete="off" maxLength={100}/>
+                    <div className={`${css.createFolderStatus} ${status !== "" ? css.createFolderErrorStatus : ""}`}>
+                        {status === "" ? "" : status}
+                    </div>
+                    <button disabled={loading} className={!loading ? css.createFolderButton : css.createFolderButtonBlocked} 
+                    onClick={(e) => handleFileNameChange(currentlyModifiedFile!, e)}>
+                        Change
+                    </button>
+                </form>
+            </div>
+    </div>
+    )
+}
+
+function FolderNameChangePopup({handleFolderNameChange, loading, setFolderNameChangePopup, status, nameChange, currentlyModifiedFile}: 
+    {handleFolderNameChange: (file: S3File, e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void, loading: boolean, 
+        setFolderNameChangePopup: React.Dispatch<React.SetStateAction<boolean>>, 
+        status: string, nameChange: React.RefObject<HTMLInputElement | null>, currentlyModifiedFile: S3File | null
+    }) {
+    return (
+    <div className={css.createFolderPopupWrapper} onClick={() => setFolderNameChangePopup(b => !b)}>
+            <div className={css.createFolderPopup} onClick={(e) => {e.stopPropagation()}}>
+                <div className={css.createFolderPopupHeader}>Change folder name</div>
+                <form className={css.formContainer}>
+                    <input className={css.createFolderInput} ref={nameChange} type="text" placeholder="Name" autoComplete="off" maxLength={100}/>
+                    <div className={`${css.createFolderStatus} ${status !== "" ? css.createFolderErrorStatus : ""}`}>
+                        {status === "" ? "" : status}
+                    </div>
+                    <button disabled={loading} className={!loading ? css.createFolderButton : css.createFolderButtonBlocked} 
+                    onClick={(e) => handleFolderNameChange(currentlyModifiedFile!, e)}>
+                        Change
+                    </button>
+                </form>
+            </div>
     </div>
     )
 }

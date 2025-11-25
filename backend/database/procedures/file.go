@@ -46,7 +46,7 @@ BEGIN
         RAISE EXCEPTION 'user does not own the repository or is not a member with enough permissions' USING ERRCODE = '01007';
     END IF;
 	IF EXISTS (SELECT 1 FROM file_ WHERE repository_id_ = repository_id AND path_ = path) THEN
-		RAISE EXCEPTION 'file already exists' USING ERRCODE = '01007';
+		RAISE EXCEPTION 'file already exists' USING ERRCODE = '90002';
 	END IF;
 	IF folder_path <> '' AND NOT EXISTS (SELECT 1 FROM file_ WHERE repository_id_ = repository_id AND path_ = folder_path AND type_ = 'folder'::file_type_enum_) THEN
 		RAISE EXCEPTION 'the folder to insert the path in does not exist' USING ERRCODE = '01007';
@@ -64,7 +64,7 @@ check_permission_modify_file_(user_id BIGINT, file_id BIGINT)
 LANGUAGE PLPGSQL
 AS $$
 BEGIN
-	IF NOT EXISTS (SELECT 1 FROM file_ WHERE file_.id_ = file_id)
+	IF NOT EXISTS (SELECT 1 FROM file_ WHERE file_.id_ = file_id) THEN
 		RAISE EXCEPTION 'resource does not exist' USING ERRCODE = '90004';
 	END IF;
 	IF NOT EXISTS (SELECT 1 FROM repository_ JOIN file_ ON repository_.id_ = file_.repository_id_ WHERE repository_.user_id_ = user_id AND file_.id_ = file_id) AND

@@ -2,6 +2,7 @@ package file
 
 import (
 	db "backend/database"
+	"backend/database/errorcodes"
 	"backend/types"
 	"context"
 	"encoding/json"
@@ -83,6 +84,11 @@ func PatchFolderName(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+	if ok && pgErr.Code == errorcodes.ResourceDoesNotExist {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -140,6 +146,11 @@ func PatchFolderName(w http.ResponseWriter, r *http.Request) {
 			tx.Rollback(ctx)
 			continue
 		}
+		if ok && pgErr.Code == pgerrcode.UniqueViolation {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -178,6 +189,11 @@ func PatchFolderName(w http.ResponseWriter, r *http.Request) {
 				// End the transaction now to start another transaction.
 				tx.Rollback(ctx)
 				continue
+			}
+			if ok && pgErr.Code == pgerrcode.UniqueViolation {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusConflict)
+				return
 			}
 			if err != nil {
 				fmt.Println(err)
