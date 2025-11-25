@@ -260,7 +260,13 @@ export default function Repository() {
             method: 'DELETE'
         })
         if(res.status === 403) {
-            setWarningMessage("Cannot delete this file")
+            setWarningMessage("Insufficient permission to delete this file")
+            setWarningPopup(true)
+            setLoading(false)
+            return
+        }
+        if(res.status === 404) {
+            setWarningMessage("This file does not exist")
             setWarningPopup(true)
             setLoading(false)
             return
@@ -285,7 +291,13 @@ export default function Repository() {
             method: 'DELETE'
         })
         if(res.status === 403) {
-            setWarningMessage("Cannot delete this folder")
+            setWarningMessage("Insufficient permission to delete this folder")
+            setWarningPopup(true)
+            setLoading(false)
+            return
+        }
+        if(res.status === 404) {
+            setWarningMessage("This folder does not exist")
             setWarningPopup(true)
             setLoading(false)
             return

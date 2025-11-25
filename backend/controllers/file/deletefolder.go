@@ -2,6 +2,7 @@ package file
 
 import (
 	db "backend/database"
+	"backend/database/errorcodes"
 	"backend/storage"
 	"backend/types"
 	"context"
@@ -53,6 +54,11 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	if ok && pgErr.Code == errorcodes.ResourceDoesNotExist {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	if err != nil {
