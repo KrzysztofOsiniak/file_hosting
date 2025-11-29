@@ -108,12 +108,12 @@ func AbortUpload(ctx context.Context, key string, uploadID string) error {
 	return nil
 }
 
-func GetDownload(ctx context.Context, key string) (string, error) {
+func GetDownload(ctx context.Context, key, name string) (string, error) {
 	if storageOption == "local" {
-		return ls.AWS.GetDownload(ctx, key)
+		return ls.AWS.GetDownload(ctx, key, name)
 	}
 	if storageOption == "cloud" {
-		return cs.AWS.GetDownload(ctx, key)
+		return cs.AWS.GetDownload(ctx, key, name)
 	}
 	return "", nil
 }
