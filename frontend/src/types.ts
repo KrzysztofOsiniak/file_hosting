@@ -32,3 +32,11 @@ export type S3File = {
     size: number,
     uploadDate: number
 }
+export type FileInProgress = {
+    id: number,
+    bytesUploaded: number,
+    bytesUploadedPrevious: number,
+    uploadSpeedBytes: number,
+    timeFromLastUploadedBytes: Date,
+    error: string,
+}
