@@ -39,6 +39,7 @@ export default function Repository() {
     const nameChange = useRef<HTMLInputElement>(null)
     const folderName = useRef<HTMLInputElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const pausedFiles = useRef<Set<number>>(new Set())
 
     function handleFileUpload() {
         fileInputRef.current?.click()
@@ -106,6 +107,11 @@ export default function Repository() {
         let {partCount, partSize, leftover} = splitFile(file.size)
         uploadParts = uploadParts.sort((part1, part2) => part1.part - part2.part)
         for(let i = 0, start; i < uploadParts.length; i++) {
+            if(pausedFiles.current.has(fileID)) {
+                setFilesInProgress(f => f.filter(f2 => f2.id !== fileID))
+                pausedFiles.current.delete(fileID)
+                return
+            }
             start = i * partSize
             if(i+1 === partCount && leftover !== 0) {
                 partSize = leftover
@@ -114,8 +120,7 @@ export default function Repository() {
             xhr.open('PUT', uploadParts[i].url)
             setFilesInProgress(f => f.map(f2 => {
                 if(f2.id === fileID) {
-                    return {id: f2.id, bytesUploaded: f2.bytesUploaded, bytesUploadedPrevious: 0, 
-                        uploadSpeedBytes: f2.uploadSpeedBytes, timeFromLastUploadedBytes: f2.timeFromLastUploadedBytes, error: f2.error}
+                    return {...f2, bytesUploadedPrevious: 0}
                 }
                 return f2
             }))
@@ -125,9 +130,9 @@ export default function Repository() {
 
                     setFilesInProgress(f => f.map(f2 => {
                         if(f2.id === fileID) {
+                            const now = new Date()
                             const newBytesUploaded = f2.bytesUploaded + bytesUploaded - f2.bytesUploadedPrevious
-                            return {bytesUploaded: newBytesUploaded, bytesUploadedPrevious: bytesUploaded,
-                            id: f2.id, uploadSpeedBytes: newBytesUploaded/(f2.timeFromLastUploadedBytes.getMilliseconds()*1000), timeFromLastUploadedBytes: new Date(), error: f2.error}
+                            return {...f2, bytesUploaded: newBytesUploaded, bytesUploadedPrevious: bytesUploaded, uploadSpeedBytes: (bytesUploaded - f2.bytesUploadedPrevious)/((now.getTime()-f2.timeFromLastUploadedBytes.getTime())/1000), timeFromLastUploadedBytes: new Date()}
                         }
                         return f2
                     }))
@@ -176,6 +181,11 @@ export default function Repository() {
                 return
             }
         }
+        if(pausedFiles.current.has(fileID)) {
+            setFilesInProgress(f => f.filter(f2 => f2.id !== fileID))
+            pausedFiles.current.delete(fileID)
+            return
+        }
 
         // Finish the multipart upload.
         const resComplete = await fetch('/api/file/upload-complete', {
@@ -200,11 +210,7 @@ export default function Repository() {
         setFiles(f => f!.map((v, _) => {
             if(v.id === fileID) {
                 return {
-                    id: v.id,
-                    ownerUsername: v.ownerUsername,
-                    path: v.path,
-                    size: v.size,
-                    type: v.type,
+                    ...v,
                     uploadDate: completeData.date
                 }
             }
@@ -328,11 +334,9 @@ export default function Repository() {
         setFiles(f => f !== null ? f.map(f2 => {
             if(f2.id === file.id) {
                 if(f2.path.includes("/")) {
-                    return {path: f2.path.substring(0, f2.path.lastIndexOf('/')+1) + newName,
-                    id: f2.id, ownerUsername: f2.ownerUsername, size: f2.size, type: f2.type, uploadDate: f2.uploadDate}
+                    return {...f2, path: f2.path.substring(0, f2.path.lastIndexOf('/')+1) + newName}
                 } else {
-                    return {path: newName,
-                    id: f2.id, ownerUsername: f2.ownerUsername, size: f2.size, type: f2.type, uploadDate: f2.uploadDate}
+                    return {...f2, path: newName}
                 }
             }
             return f2
@@ -380,19 +384,16 @@ export default function Repository() {
         setFiles(f => f !== null ? f.map(f2 => {
             if(f2.id === file.id) {
                 if(f2.path.includes("/")) {
-                    return {path: f2.path.substring(0, f2.path.lastIndexOf('/')+1) + newName,
-                    id: f2.id, ownerUsername: f2.ownerUsername, size: f2.size, type: f2.type, uploadDate: f2.uploadDate}
+                    return {...f2, path: f2.path.substring(0, f2.path.lastIndexOf('/')+1) + newName}
                 } else {
-                    return {path: newName,
-                    id: f2.id, ownerUsername: f2.ownerUsername, size: f2.size, type: f2.type, uploadDate: f2.uploadDate}
+                    return {...f2, path: newName}
                 }
             }
             return f2
         }) : null)
         setFiles(f => f !== null ? f.map(f2 => {
             if(f2.path.startsWith(oldPath + "/")) {
-                return {path: f2.path.replace(oldPath + "/", oldPath.substring(0, oldPath.lastIndexOf('/')+1) + newName + "/"),
-                id: f2.id, ownerUsername: f2.ownerUsername, size: f2.size, type: f2.type, uploadDate: f2.uploadDate}
+                return {...f2, path: f2.path.replace(oldPath + "/", oldPath.substring(0, oldPath.lastIndexOf('/')+1) + newName + "/")}
             }
             return f2
         }) : null)
@@ -489,7 +490,7 @@ export default function Repository() {
 
 
     useEffect(() => {
-        setInterval(() => {
+        const interval = setInterval(() => {
             setDummyState(r => !r)
         }, 1000)
         fetch(`/api/repository/${repositoryID}`)
@@ -505,6 +506,7 @@ export default function Repository() {
             setFiles(data.files)
         })
         .catch()
+        return () => clearInterval(interval)
     }, [])
     useEffect(() => setHomePage(false), [])
 
@@ -581,12 +583,11 @@ export default function Repository() {
                     return (
                         <div className={`${css.filesElement}`} key={file.id}>
                             <div className={`${css.fileName} ${css.inProgress}`} title={file.path}>{file.path.split('/').pop()}</div>
-                            <div className={css.username}>{getUnitSize(currentProgress.bytesUploaded)}{getUnit(currentProgress.bytesUploaded)}/{getUnitSize(file.size)}{getUnit(file.size)}</div>
-                            <div className={css.size}>{getUnitSize(currentProgress.uploadSpeedBytes)}{getUnit(currentProgress.uploadSpeedBytes)}/s</div>
-                            <div className={css.uploadDate}></div>
-                            <svg onClick={e => handleDownload(file.id, e)} className={css.downloadIcon} viewBox="0 -960 960 960"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>
+                            <div className={css.upladedBytes}>Progress: {getUnitSize(currentProgress.bytesUploaded)}{getUnit(currentProgress.bytesUploaded)}/{getUnitSize(file.size)}{getUnit(file.size)}</div>
+                            <div className={css.uploadSpeed}>Speed: {getUnitSize(currentProgress.uploadSpeedBytes)}{getUnit(currentProgress.uploadSpeedBytes)}/s</div>
+                            <svg onClick={() => pausedFiles.current.add(file.id)} className={css.pauseIcon} viewBox="0 -960 960 960"><path d="M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Zm400-80h80v-400h-80v400Zm-320 0h80v-400h-80v400Zm0-400v400-400Zm320 0v400-400Z"/></svg>
                             <svg onClick={e => handlePopupClick(e, file)} className={css.editIcon} viewBox="0 -960 960 960"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
-                            <svg onClick={e => handleFileDelete(file.id, e)} className={css.deleteIcon} viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
+                            <svg onClick={e => {pausedFiles.current.add(file.id);}} className={css.deleteIcon} viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
                         </div>
                     )}
                     return (

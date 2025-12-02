@@ -89,6 +89,24 @@
     line-height: 3rem;
     white-space: nowrap;
 }
+.upladedBytes {
+    padding-left: 1rem;
+    height: 100%;
+    width: 30%;
+    overflow: hidden;
+    color: var(--font-muted-color);
+    line-height: 3rem;
+    white-space: nowrap;
+}
+.uploadSpeed {
+    padding-left: 1rem;
+    height: 100%;
+    width: 20%;
+    overflow: hidden;
+    color: var(--font-muted-color);
+    line-height: 3rem;
+    white-space: nowrap;
+}
 .uploadContainer {
     cursor: pointer;
     color: var(--secondary-dimmed-color);
@@ -149,6 +167,16 @@
     margin-right: 0.5rem;
     &:hover {
         fill: var(--warning-dimmed-color);
+    }
+}
+.pauseIcon {
+    cursor: pointer;
+    width: 3rem;
+    height: 3rem;
+    fill: var(--progress-color);
+    margin-right: 0.5rem;
+    &:hover {
+        fill: var(--progress-dimmed-color);
     }
 }
 
