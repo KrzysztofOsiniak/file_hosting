@@ -442,6 +442,37 @@ export default function Repository() {
         setLoading(false)
     }
 
+    async function handleAbortUpload(id: number, e: React.MouseEvent<SVGSVGElement>) {
+        e.stopPropagation()
+        if(loading) return
+        setLoading(true)
+        const res = await fetch(`/api/file/in-progress/${id}`, {
+            method: 'DELETE'
+        })
+        if(res.status === 403) {
+            setWarningMessage("Insufficient permission to delete this file")
+            setWarningPopup(true)
+            setLoading(false)
+            return
+        }
+        if(res.status === 404) {
+            setWarningMessage("This file does not exist")
+            setWarningPopup(true)
+            setLoading(false)
+            return
+        }
+        if(res.status !== 200) {
+            setWarningMessage("Unknown server error")
+            setWarningPopup(true)
+            setLoading(false)
+            return
+        }
+        const size = files !== null ? files.filter(f => f.id === id)[0].size : 0
+        setFreeSpace(s => s + size)
+        setFiles(f => f !== null ? f.filter(f2 => f2.id !== id) : null)
+        setLoading(false)
+    }
+
     async function handleFolderDelete(id: number, e: React.MouseEvent<SVGSVGElement>) {
         e.stopPropagation()
         if(loading) return
@@ -587,7 +618,7 @@ export default function Repository() {
                             <div className={css.uploadSpeed}>Speed: {getUnitSize(currentProgress.uploadSpeedBytes)}{getUnit(currentProgress.uploadSpeedBytes)}/s</div>
                             <svg onClick={() => pausedFiles.current.add(file.id)} className={css.pauseIcon} viewBox="0 -960 960 960"><path d="M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Zm400-80h80v-400h-80v400Zm-320 0h80v-400h-80v400Zm0-400v400-400Zm320 0v400-400Z"/></svg>
                             <svg onClick={e => handlePopupClick(e, file)} className={css.editIcon} viewBox="0 -960 960 960"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
-                            <svg onClick={e => {pausedFiles.current.add(file.id);}} className={css.deleteIcon} viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
+                            <svg onClick={e => {pausedFiles.current.add(file.id); handleAbortUpload(file.id, e)}} className={css.deleteIcon} viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
                         </div>
                     )}
                     return (
@@ -598,7 +629,7 @@ export default function Repository() {
                             <div className={css.uploadDate}>In progress...</div>
                             <div className={css.downloadIcon}></div>
                             <svg onClick={e => handlePopupClick(e, file)} className={css.editIcon} viewBox="0 -960 960 960"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
-                            <svg onClick={e => {}} className={css.deleteIcon} viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
+                            <svg onClick={e => {handleAbortUpload(file.id, e)}} className={css.deleteIcon} viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
                         </div>
                     )
                 }
