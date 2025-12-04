@@ -20,6 +20,8 @@ type getRepositoryResponse struct {
 	Members        []member `json:"members"`
 	Files          []file   `json:"files"`
 	UserPermission string   `json:"userPermission"`
+	OwnerUsername  string   `json:"ownerUsername"`
+	Visibility     string   `json:"visibility"`
 }
 
 // UploadDate is int Unix time.
@@ -40,11 +42,11 @@ type member struct {
 
 // Return all data for a repository view and actions, for a given user:
 //
-// - User not logged in: repository's name, files and "none" UserPermission in response.
+// - User not logged in: repository's name and visibility, owner's username, files and "none" UserPermission in response.
 //
-// - User logged in and owner: repository's name, members, files and "owner" UserPermission in response.
+// - User logged in and owner: repository's name and visibility, owner's username, members, files and "owner" UserPermission in response.
 //
-// - User logged in and member: repository's name, members (without their permission), files and "full"/"read" UserPermission in response.
+// - User logged in and member: repository's name and visibility, owner's username, members (without their permission), files and "full"/"read" UserPermission in response.
 //
 // If the repository is not public and the user is not logged in return status 401.
 // If the user is logged in, the repository is private, the user is not the repository's owner and not its member return 403.
@@ -84,8 +86,8 @@ func GetRepository(w http.ResponseWriter, r *http.Request) {
 	var res getRepositoryResponse
 	var visibility string
 	var ownerUserID int
-	err = tx.QueryRow(ctx, "SELECT name_, visibility_, user_id_ FROM repository_ WHERE id_ = $1",
-		repositoryID).Scan(&res.Name, &visibility, &ownerUserID)
+	err = tx.QueryRow(ctx, "SELECT f.name_, f.visibility_, f.user_id_, u.username_, f.visibility_ FROM repository_ f JOIN user_ u ON f.user_id_ = u.id_ WHERE f.id_ = $1",
+		repositoryID).Scan(&res.Name, &visibility, &ownerUserID, &res.OwnerUsername, &res.Visibility)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)

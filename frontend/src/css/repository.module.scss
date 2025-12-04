@@ -17,6 +17,26 @@
     font-size: 2.6rem;
     color: var(--secondary-dimmed-color);
 }
+.repositoryVisibility {
+    font-size: 1.8rem;
+    color: var(--font-muted-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.repositoryVisibilityChange {
+    cursor: pointer;
+    margin-left: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--secondary-dimmed-color);
+    fill: var(--secondary-color);
+    &:hover {
+        color: var(--secondary-dark-color);
+        fill: var(--secondary-dark-color);
+    }
+}
 .filesContainer {
     display: flex;
     flex-direction: column;
@@ -123,6 +143,10 @@
     width: 3rem;
     height: 3rem;
     margin-left: 0.3rem;
+}
+.switchVisibilityIcon {
+    height: 2.5rem;
+    width: 2.5rem;
 }
 .createFolderContainer {
     cursor: pointer;

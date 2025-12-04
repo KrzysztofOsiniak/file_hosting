@@ -13,11 +13,15 @@ export type RepositoryResponse = {
     name: string,
     members: Member[],
     files: S3File[],
-    userPermission: "owner" | "none" |"full" | "read"
+    userPermission: "owner" | "none" |"full" | "read",
+    ownerUsername: string,
+    visibility: "public" | "private",
 }
 export type Repository = {
     name: string,
-    userPermission: "owner" | "none" |"full" | "read"
+    userPermission: "owner" | "none" |"full" | "read",
+    ownerUsername: string,
+    visibility: "public" | "private",
 }
 type Member = {
     id: number,

@@ -16,11 +16,12 @@ type UploadPart = {
 }
 
 export default function Repository() {
-    const repositoryID = useLoaderData()
+    const repositoryID = parseInt(useLoaderData())
     const {setHomePage, setFreeSpace, username} = useOutletContext<{setHomePage: React.Dispatch<React.SetStateAction<boolean>>, 
         setFreeSpace: React.Dispatch<React.SetStateAction<number>>, username: string}>()
 
-    const [repository, setRepository] = useState<Repository | number | null>(null)
+    const [repository, setRepository] = useState<Repository | null>(null)
+    const [repositoryError, setRepositoryError] = useState<null | number>(null)
     const [files, setFiles] = useState<S3File[] | null>(null)
     const [displayFiles, setDisplayFiles] = useState<S3File[] | null>(null)
     const [currentPath, setCurrentPath] = useState("")
@@ -57,7 +58,7 @@ export default function Repository() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                key: path + file.name, size: file.size, repositoryID: parseInt(repositoryID)
+                key: path + file.name, size: file.size, repositoryID: repositoryID
             })
         })
         if(res.status !== 200) {
@@ -412,7 +413,7 @@ export default function Repository() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                key: currentPath + name, repositoryID: parseInt(repositoryID)
+                key: currentPath + name, repositoryID: repositoryID
             })
         })
         if(res.status === 200) {
@@ -686,6 +687,33 @@ export default function Repository() {
         setLoading(false)
     }
 
+    async function handleVisibilityChange() {
+        if(repository === null) return
+        if(loading) return
+        setLoading(true)
+        const newVisibility = repository.visibility === "public" ? "private" : "public"
+        const res = await fetch(`/api/repository/visibility`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: repositoryID, visibility: newVisibility
+            })
+        })
+        if(res.status !== 200) {
+            setWarningMessage("Unknown server error")
+            setWarningPopup(true)
+            setLoading(false)
+            return
+        }
+        setRepository(r => {
+            if(r === null) return r
+            return {...r, visibility: newVisibility}
+        })
+        setLoading(false)
+    }
+
     function handleFolderClick(path: string) {
         setCurrentPath(path)
     }
@@ -706,13 +734,13 @@ export default function Repository() {
         fetch(`/api/repository/${repositoryID}`)
         .then((res): Promise<RepositoryResponse> => {
             if(res.status != 200) {
-                setRepository(res.status)
+                setRepositoryError(res.status)
                 throw new Error()
             }
             return res.json()
         })
         .then(data => {
-            setRepository({name: data.name, userPermission: data.userPermission})
+            setRepository({name: data.name, userPermission: data.userPermission, ownerUsername: data.ownerUsername, visibility: data.visibility})
             setFiles(data.files)
         })
         .catch()
@@ -731,7 +759,7 @@ export default function Repository() {
         }))
     }, [files])
 
-    if(repository === 404 || repository === 401) {
+    if(repositoryError === 404 || repositoryError === 401) {
         return <>Repository not found</>
     }
     if(typeof repository === "number") {
@@ -751,7 +779,11 @@ export default function Repository() {
     return (
     <div className={css.mainShadowWrapper}>
     <div className={css.mainContainer}>
-        <div className={css.repositoryTitle}>{repository.name}</div>
+        <div className={css.repositoryTitle}>{repository.ownerUsername}/{repository.name}</div>
+        <div className={css.repositoryVisibility}>This repository is {repository.visibility}
+            {repository.ownerUsername === username ? <div className={css.repositoryVisibilityChange} onClick={handleVisibilityChange}>Change visibility<svg className={css.switchVisibilityIcon} viewBox="0 -960 960 960"><path d="m482-200 114-113-114-113-42 42 43 43q-28 1-54.5-9T381-381q-20-20-30.5-46T340-479q0-17 4.5-34t12.5-33l-44-44q-17 25-25 53t-8 57q0 38 15 75t44 66q29 29 65 43.5t74 15.5l-38 38 42 42Zm165-170q17-25 25-53t8-57q0-38-14.5-75.5T622-622q-29-29-65.5-43T482-679l38-39-42-42-114 113 114 113 42-42-44-44q27 0 55 10.5t48 30.5q20 20 30.5 46t10.5 52q0 17-4.5 34T603-414l44 44ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></div>
+            : <></>}
+        </div>
         <div className={css.filesContainer}>
             <input type="file" onChange={handleStartUpload} ref={fileInputRef} style={{display: 'none'}}/>
             <input type="file" onChange={handleResumeUpload} ref={fileResumeInputRef} style={{display: 'none'}}/>
