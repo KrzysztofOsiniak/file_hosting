@@ -203,6 +203,10 @@
         fill: var(--progress-dimmed-color);
     }
 }
+.separator {
+    color: var(--main-color);
+    display: inline;
+}
 
 // Create folder popup styles
 .createFolderPopupWrapper {
