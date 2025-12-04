@@ -237,6 +237,11 @@ export default function Repository() {
         if(e.target.files === null) return
         const file = e.target.files[0]
         const fileID = fileResumeID.current.valueOf()
+        if(file.size !== files?.find(f => f.id === fileID)?.size) {
+            setWarningMessage("The file size differs from the original file")
+            setWarningPopup(true)
+            return
+        }
         const res = await fetch('/api/file/upload-resume', {
             method: 'POST',
             headers: {
