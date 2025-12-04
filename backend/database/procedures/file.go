@@ -21,16 +21,16 @@ AS $$
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM repository_ WHERE user_id_ = user_id AND id_ = repository_id) AND
 	NOT EXISTS (SELECT 1 FROM member_ WHERE repository_id_ = repository_id AND user_id_ = user_id AND permission_ = 'full'::permission_enum_) THEN
-        RAISE EXCEPTION 'user does not own the repository or is not a member with enough permissions' USING ERRCODE = '01007';
+        RAISE EXCEPTION 'user does not own the repository or is not a member with enough permissions' USING ERRCODE = '90001';
     END IF;
 	IF COALESCE((SELECT SUM(size_) FROM file_ WHERE user_id_ = user_id), 0) + size > (SELECT space_ FROM user_ WHERE id_ = user_id) THEN
-		RAISE EXCEPTION 'user does not have enough space to insert a file' USING ERRCODE = '01007';
+		RAISE EXCEPTION 'user does not have enough space to insert a file' USING ERRCODE = '90000';
 	END IF;
 	IF EXISTS (SELECT 1 FROM file_ WHERE repository_id_ = repository_id AND path_ = path) THEN
-		RAISE EXCEPTION 'file already exists' USING ERRCODE = '01007';
+		RAISE EXCEPTION 'file already exists' USING ERRCODE = '90002';
 	END IF;
 	IF folder_path <> '' AND NOT EXISTS (SELECT 1 FROM file_ WHERE repository_id_ = repository_id AND path_ = folder_path AND type_ = 'folder'::file_type_enum_) THEN
-		RAISE EXCEPTION 'the folder to insert the path in does not exist' USING ERRCODE = '01007';
+		RAISE EXCEPTION 'the folder to insert the path in does not exist' USING ERRCODE = '90003';
 	END IF;
 END
 $$;
@@ -46,7 +46,7 @@ BEGIN
         RAISE EXCEPTION 'user does not own the repository or is not a member with enough permissions' USING ERRCODE = '01007';
     END IF;
 	IF EXISTS (SELECT 1 FROM file_ WHERE repository_id_ = repository_id AND path_ = path) THEN
-		RAISE EXCEPTION 'file already exists' USING ERRCODE = '01007';
+		RAISE EXCEPTION 'file already exists' USING ERRCODE = '90002';
 	END IF;
 	IF folder_path <> '' AND NOT EXISTS (SELECT 1 FROM file_ WHERE repository_id_ = repository_id AND path_ = folder_path AND type_ = 'folder'::file_type_enum_) THEN
 		RAISE EXCEPTION 'the folder to insert the path in does not exist' USING ERRCODE = '01007';
@@ -64,6 +64,9 @@ check_permission_modify_file_(user_id BIGINT, file_id BIGINT)
 LANGUAGE PLPGSQL
 AS $$
 BEGIN
+	IF NOT EXISTS (SELECT 1 FROM file_ WHERE file_.id_ = file_id) THEN
+		RAISE EXCEPTION 'resource does not exist' USING ERRCODE = '90004';
+	END IF;
 	IF NOT EXISTS (SELECT 1 FROM repository_ JOIN file_ ON repository_.id_ = file_.repository_id_ WHERE repository_.user_id_ = user_id AND file_.id_ = file_id) AND
 	NOT EXISTS (SELECT 1 FROM file_ WHERE file_.id_ = file_id AND user_id_ = user_id AND type_ = 'file'::file_type_enum_) AND
 	NOT EXISTS (SELECT 1 FROM member_ JOIN file_ ON member_.repository_id_ = file_.repository_id_ WHERE member_.user_id_ = user_id AND file_.id_ = file_id AND member_.permission_ = 'full'::permission_enum_) THEN

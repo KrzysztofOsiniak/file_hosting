@@ -2,6 +2,7 @@ package file
 
 import (
 	db "backend/database"
+	"backend/database/errorcodes"
 	"backend/types"
 	"context"
 	"encoding/json"
@@ -76,6 +77,11 @@ func PatchFileName(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+	if ok && pgErr.Code == errorcodes.ResourceDoesNotExist {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -127,6 +133,11 @@ func PatchFileName(w http.ResponseWriter, r *http.Request) {
 		// Change the file path.
 		_, err = tx.Exec(ctx, "UPDATE file_ SET path_ = $1 WHERE id_ = $2 AND type_ = 'file'::file_type_enum_", newPath, f.ID)
 		ok = errors.As(err, &pgErr)
+		if ok && pgErr.Code == pgerrcode.UniqueViolation {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
 			// End the transaction now to start another transaction.
 			tx.Rollback(ctx)

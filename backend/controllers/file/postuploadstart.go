@@ -2,6 +2,7 @@ package file
 
 import (
 	db "backend/database"
+	"backend/database/errorcodes"
 	"backend/storage"
 	"backend/types"
 	"backend/util/config"
@@ -86,6 +87,34 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			pgx.NamedArgs{"repoID": f.RepositoryID, "userID": userID, "path": f.Key, "folderPath": folderPath, "size": f.Size})
 		var pgErr *pgconn.PgError
 		ok := errors.As(err, &pgErr)
+		if ok && pgErr.Code == errorcodes.UserHasNoSpace {
+			fmt.Println(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(types.ErrorResponse{Message: types.UserHasNoSpace})
+			return
+		}
+		if ok && pgErr.Code == errorcodes.InsufficientPermission {
+			fmt.Println(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(types.ErrorResponse{Message: types.InsufficientPermission})
+			return
+		}
+		if ok && pgErr.Code == errorcodes.FileAlreadyExists {
+			fmt.Println(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(types.ErrorResponse{Message: types.FileAlreadyExists})
+			return
+		}
+		if ok && pgErr.Code == errorcodes.ContainingFolderDoesNotExist {
+			fmt.Println(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(types.ErrorResponse{Message: types.ContainingFolderDoesNotExist})
+			return
+		}
 		if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusForbidden)
@@ -123,7 +152,7 @@ func PostUploadStart(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		data, err = storage.StartUpload(ctx, strconv.Itoa(fileID), f.Size)
+		data, err = storage.StartUpload(ctx, strconv.Itoa(fileID), path.Base(f.Key), f.Size)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)

@@ -3,6 +3,7 @@ package aws
 import (
 	"backend/types"
 	"context"
+	"sort"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -14,6 +15,10 @@ func (s Storage) CompleteMultipartUpload(ctx context.Context, key string, upload
 	for _, v := range completedParts {
 		completed = append(completed, s3types.CompletedPart{ETag: &v.ETag, PartNumber: aws.Int32(int32(v.Part))})
 	}
+	// aws s3 requires the parts to be ordered.
+	sort.Slice(completed, func(i, j int) bool {
+		return *completed[i].PartNumber < *completed[j].PartNumber
+	})
 	completeInput := &s3.CompleteMultipartUploadInput{
 		Bucket:   aws.String(s.Bucket),
 		Key:      aws.String(key),

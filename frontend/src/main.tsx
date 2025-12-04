@@ -1,12 +1,12 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, redirect } from "react-router-dom"
-import { data } from "react-router"
+import { data, type LoaderFunctionArgs } from "react-router"
 import Error from './error.tsx'
 import Login from './login.tsx'
 import Signup from './signup.tsx'
 import RootHeader from './rootheader.tsx'
 import Home from './home.tsx'
+import Repository from './repository.tsx'
 
 const router = createBrowserRouter([
     {
@@ -23,6 +23,12 @@ const router = createBrowserRouter([
             {
                 path: "/home",
                 element: <Home/>,
+                errorElement: <Error/>
+            },
+            {
+                path: "repository/:repositoryID",
+                loader: repositoryLoader,
+                element: <Repository/>,
                 errorElement: <Error/>
             }
         ]
@@ -61,8 +67,10 @@ async function rootHeaderLoader() {
         freeSpace: body.space-body.spaceTaken, space: body.space}
 }
 
+async function repositoryLoader({params}: LoaderFunctionArgs<{repositoryID: number}>) {
+    return params.repositoryID
+}
+
 createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-        <RouterProvider router={router}/>
-    </StrictMode>,
+    <RouterProvider router={router}/>
 )

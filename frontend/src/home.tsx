@@ -1,4 +1,4 @@
-import { useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import css from './css/home.module.scss'
 import { useEffect, useRef, useState } from 'react'
 import { getUnit, getUnitSize } from './util'
@@ -17,8 +17,10 @@ type CreateRepositoryResponse = {
 }
 
 function Home() {
-    const {username, role} = useOutletContext<{username: string | null, role: string | null}>()
+    const {username, role, setHomePage} = useOutletContext<{username: string | null, 
+        role: string | null, setHomePage: React.Dispatch<React.SetStateAction<boolean>>}>()
 
+    useEffect(() => setHomePage(true), [])
     return (
     <>
     <div className={css.mainShadowWrapper}>
@@ -53,7 +55,8 @@ function Repositories({username, role}: {username: string | null, role: string |
         <>
         <div className={css.repositoriesTitle}>Owned repositories</div>
         <div className={css.repositoriesContainer}>
-            <OwnedRepositories username={username} role={role} r={r} error={error} setRepositories={setRepositories}/>
+            <OwnedRepositories username={username} role={role} r={r} error={error} 
+            setRepositories={setRepositories}/>
         </div>
 
         <div className={css.repositoriesTitle}>Member repositories</div>
@@ -66,7 +69,9 @@ function Repositories({username, role}: {username: string | null, role: string |
 
 function OwnedRepositories(
 {username, role, r, error, setRepositories}: {username: string | null, role: string | null, r: Repositories | null, 
-    error: number, setRepositories: React.Dispatch<React.SetStateAction<Repositories | null>>}) {
+error: number, setRepositories: React.Dispatch<React.SetStateAction<Repositories | null>>}) {
+    const navigate = useNavigate()    
+
     const [loading, setLoading] = useState(false)
     const [repositoryVisibility, setRepositoryVisibility] = useState("Private")
     const [createRepositoryPopup, setCreateRepositoryPopup] = useState(false)
@@ -102,14 +107,8 @@ function OwnedRepositories(
             })
         })
         if(res.status === 200) {
-            setCreateError(false)
-            setStatus("")
-            setCreateRepositoryPopup(false)
             const data: CreateRepositoryResponse = await res.json()
-            setRepositories((r) => {
-                if(r === null) return {repositories: [{id: data.id, name: repoName, ownerUsername: username!, userUploadedSpace: 0}]}
-                else return {repositories: [...r.repositories, {id: data.id, name: repoName, ownerUsername: username!, userUploadedSpace: 0}]}
-            })
+            navigate(`/repository/${data.id}`)
         }
         else {
             setCreateError(true)
@@ -125,7 +124,8 @@ function OwnedRepositories(
         }
         setLoading(false)
     }
-    async function handleDeleteRepository(id: number) {
+    async function handleDeleteRepository(e: React.MouseEvent<HTMLButtonElement>, id: number) {
+        e.stopPropagation()
         const res = await fetch(`/api/repository/${id}`, {
             method: 'DELETE',
         })
@@ -162,10 +162,10 @@ function OwnedRepositories(
         </div>
     </div>
     {r.repositories.map(repo => repo.ownerUsername === username ? 
-    <div className={`${css.ownedRepositoriesContainerElement} ${css.selectable}`} key={repo.id}>
-        <div className={css.ownedRepositoriesName}>{repo.name}</div>
+    <div onClick={() => navigate(`/repository/${repo.id}`)} className={`${css.ownedRepositoriesContainerElement} ${css.selectable}`} key={repo.id}>
+        <div className={css.ownedRepositoriesName} title={repo.name}>{repo.name}</div>
         <div className={css.ownedRepositoriesUploadSize}>{getUnitSize(repo.userUploadedSpace)}{getUnit(repo.userUploadedSpace)}</div>
-        <div className={css.ownedRepositoriesDeleteContainer}><p onClick={() => handleDeleteRepository(repo.id)} className={css.ownedRepositoriesDelete}>Delete</p></div>
+        <div className={css.ownedRepositoriesDeleteContainer}><button onClick={(e) => handleDeleteRepository(e, repo.id)} className={css.ownedRepositoriesDelete}>Delete</button></div>
     </div>
     : <></>)}</>)
     }

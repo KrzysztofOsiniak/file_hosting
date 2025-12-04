@@ -1,6 +1,5 @@
 .mainShadowWrapper {
-    grid-column-start: 3;
-    width: 100%;
+    width: 70%;
     height: 100%;
     overflow-y: clip;
 }
@@ -46,20 +45,21 @@
 }
 .ownedRepositoriesName {
     width: 60%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    text-align: center;
     font-size: 1.8rem;
     color: var(--font-color);
-    overflow: auto hidden;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    line-height: 3rem;
 }
 .ownedRepositoriesUploadSize {
     width: 20%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    text-align: center;
     font-size: 1.8rem;
     color: var(--font-color);
+    line-height: 3rem;
+    text-wrap: nowrap;
 }
 .ownedRepositoriesCreateNewContainer {
     display: flex;
@@ -77,14 +77,14 @@
     &:hover {
         color: var(--secondary-dark-color);
         .ownedRepositoriesCreateIcon {
-            fill: var(--secondary-dimmed-color);
+            fill: var(--secondary-dark-color);
         }
     }
 }
 .ownedRepositoriesCreateIcon {
     width: 3rem;
     height: 3rem;
-    fill: var(--secondary-color);
+    fill: var(--secondary-dimmed-color);
 }
 .ownedRepositoriesDeleteContainer {
     display: flex;
@@ -96,6 +96,11 @@
     color: var(--warning-color);
     cursor: pointer;
     font-size: 1.8rem;
+    background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	outline: inherit;
     &:hover {
         color: var(--warning-dimmed-color);
     }
@@ -128,7 +133,7 @@
     }
 }
 .createRepositoryPopupWrapper {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     height: 100dvh;
@@ -136,7 +141,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100;
 }
 .createRepositoryPopup {
     height: 30rem;
@@ -147,7 +151,6 @@
     display: flex;
     align-items: center;
     flex-direction: column;
-    z-index: 101;
 }
 .createRepositoryPopupHeader {
     color: var(--font-color);

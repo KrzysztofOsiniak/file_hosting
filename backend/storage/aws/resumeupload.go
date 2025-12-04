@@ -22,16 +22,17 @@ func (s Storage) ResumeMultipartUpload(ctx context.Context, key string, uploadID
 		if slices.Contains(skipParts, part) {
 			continue
 		}
+		currPartSize := partSize
 		if part == partCount && leftover != 0 {
-			partSize = leftover
+			currPartSize = leftover
 		}
 		presignedPart, err := s.Presigner.PresignUploadPart(ctx, &s3.UploadPartInput{
 			Bucket:        aws.String(s.Bucket),
 			Key:           aws.String(key),
 			UploadId:      aws.String(uploadID),
 			PartNumber:    aws.Int32(int32(part)),
-			ContentLength: aws.Int64(int64(partSize)),
-		}, s3.WithPresignExpires(15*time.Minute))
+			ContentLength: aws.Int64(int64(currPartSize)),
+		}, s3.WithPresignExpires(4*24*time.Hour))
 		if err != nil {
 			return []types.UploadPart{}, err
 		}

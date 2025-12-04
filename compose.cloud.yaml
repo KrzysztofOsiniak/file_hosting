@@ -1,0 +1,94 @@
+services:
+  backend:
+    container_name: backend
+    build:
+      context: "backend/"
+    environment:
+      # :8080 to listen on all interfaces (be reachable from host).
+      # Note that tests use localhost + SERVER_HOST for requests.
+      # Make sure to run the tests after changing these.
+      - SERVER_HOST=:8080 
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=app
+      - DB_URL=postgres://postgres:password@database:5432/app # URL=postgres://[user]:[password]@[DB host]/[DB to use]
+      - LOG_DB_URL=postgres://postgres:password@log_database:5432/app # URL=postgres://[user]:[password]@[DB host]/[DB to use]
+      - JWT_KEY=better-change-it-in-prod # Secret JWT sign key. Should have appropriate length to be secure.
+      - JWT_EXPIRY=1 # JWT expiry time in seconds. Currently has a small value for the tests. Change for prod.
+      - MIN_FILE_SIZE=1 # The smallest amount of bytes an uploaded file can have. Can be important since s3 has overhead when storing files.
+      - STORAGE_OPTION=cloud # Whether to use cloud (aws) or local (seaweedfs) storage. Either set it to cloud or local.
+      # These are not important if STORAGE_OPTION is set to cloud.
+      - LOCAL_BACKEND_TEST=0 # Whether to presign s3 requests for docker network for tests. If set to 1, frontend s3 requests will not work.
+      - LOCAL_BACKEND_S3_ENDPOINT=http://s3:8333 # Endpoint for backend to reach.
+      - LOCAL_BROWSER_S3_ENDPOINT=http://localhost:8333 # Used for presigning requests for browsers to reach this url.
+      - LOCAL_BUCKET=file-hosting-app-test # Sets the bucket name.
+      - LOCAL_AWS_ACCESS_KEY_ID=test
+      - LOCAL_AWS_SECRET_ACCESS_KEY=test
+    ports:
+      - "8080:8080" # [Host port]:[Container Port]
+    depends_on:
+      database:
+        condition: service_healthy
+      log_database:
+        condition: service_healthy
+    develop:
+        watch:
+          - action: rebuild
+            path: ./backend
+            target: /app
+  frontend:
+    container_name: frontend
+    build:
+      context: "frontend/"
+    ports:
+      - "5173:5173" # [Host port]:[Container Port]
+    develop:
+      watch:
+      - action: sync
+        path: ./frontend
+        target: /app
+        ignore:
+          - node_modules
+  database:
+    container_name: database
+    build:
+      dockerfile: "./postgres.dockerfile"
+    ports:
+      - 5432:5432 # [Host port]:[Container Port]
+    user: postgres
+    environment:
+      POSTGRES_USER: postgres # The PostgreSQL user (useful to connect to the database).
+      POSTGRES_PASSWORD: password # The PostgreSQL password (useful to connect to the database).
+      POSTGRES_DB: app # The PostgreSQL default database (automatically created at first launch).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - database:/var/lib/postgresql/data
+  # Use a separate database to log requests users make.
+  log_database:
+    container_name: log_database
+    build:
+      dockerfile: "./postgres.dockerfile"
+    ports:
+      - 24000:5432 # [Host port]:[Container Port]
+    user: postgres
+    environment:
+      POSTGRES_USER: postgres # The PostgreSQL user (useful to connect to the database).
+      POSTGRES_PASSWORD: password # The PostgreSQL password (useful to connect to the database).
+      POSTGRES_DB: app # The PostgreSQL default database (automatically created at first launch).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - log_database:/var/lib/postgresql/data
+
+volumes:
+  database: {}
+  log_database: {}

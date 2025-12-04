@@ -17,9 +17,13 @@ services:
       - JWT_EXPIRY=1 # JWT expiry time in seconds. Currently has a small value for the tests. Change for prod.
       - MIN_FILE_SIZE=1 # The smallest amount of bytes an uploaded file can have. Can be important since s3 has overhead when storing files.
       - STORAGE_OPTION=local # Whether to use cloud (aws) or local (seaweedfs) storage. Either set it to cloud or local.
-      - LOCAL_BUCKET=file-hosting-app-test # This is not important if STORAGE_OPTION is set to cloud. Sets the bucket name.
-      - LOCAL_AWS_ACCESS_KEY_ID=test # This is not important if STORAGE_OPTION is set to cloud.
-      - LOCAL_AWS_SECRET_ACCESS_KEY=test # This is not important if STORAGE_OPTION is set to cloud.
+      # These are not important if STORAGE_OPTION is set to cloud.
+      - LOCAL_BACKEND_TEST=0 # Whether to presign s3 requests for docker network for tests. If set to 1, frontend s3 requests will not work.
+      - LOCAL_BACKEND_S3_ENDPOINT=http://s3:8333 # Endpoint for backend to reach.
+      - LOCAL_BROWSER_S3_ENDPOINT=http://localhost:8333 # Used for presigning requests for browsers to reach this url.
+      - LOCAL_BUCKET=file-hosting-app-test # Sets the bucket name.
+      - LOCAL_AWS_ACCESS_KEY_ID=test
+      - LOCAL_AWS_SECRET_ACCESS_KEY=test
     ports:
       - "8080:8080" # [Host port]:[Container Port]
     depends_on:
@@ -88,17 +92,19 @@ services:
       - log_database:/var/lib/postgresql/data
   master:
     container_name: seaweedfs_master
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:4.01
+    user: root
     ports:
       - 9333:9333
       - 19333:19333
       - 9324:9324
-    command: "master -ip=master -ip.bind=0.0.0.0 -volumeSizeLimitMB=10000 -metricsPort=9324"
+    command: "master -ip=master -ip.bind=0.0.0.0 -volumeSizeLimitMB=1000 -metricsPort=9324"
     volumes:
       - ./seaweedfs/master:/data
   volume:
     container_name: seaweedfs_volume
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:4.01
+    user: root
     depends_on:
       - master
     ports:
@@ -109,7 +115,8 @@ services:
       - ./seaweedfs/volume:/data
   filer:
     container_name: seaweedfs_filer
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:4.01
+    user: root
     command: 'filer -master="master:9333" -ip.bind=0.0.0.0 -metricsPort=9326'
     depends_on:
       - master
@@ -127,7 +134,7 @@ services:
     ports:
       - 8333:8333
       - 9327:9327
-    command: 's3 -filer="filer:8888" -ip.bind=0.0.0.0 -config=/etc/s3/s3config.json -metricsPort=9327'
+    command: 's3 -filer="filer:8888" -ip.bind=0.0.0.0 -config=/etc/s3/config.json -metricsPort=9327'
     depends_on:
       - master
       - volume
@@ -139,7 +146,7 @@ services:
       timeout: 5s
       retries: 3
     volumes:
-      - ./seaweedfss3.json:/etc/s3/s3config.json
+      - ./seaweedfss3.json:/etc/s3/config.json
 # Below are services for monitoring, uncomment if needed.
   # prometheus:
   #   container_name: prometheus
