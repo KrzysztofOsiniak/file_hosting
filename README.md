@@ -1,4 +1,4 @@
-## Main features
+## About
 Currently you can:
 - Upload, download and delete files
 - Resume and abort in-progress uploads
@@ -6,6 +6,8 @@ Currently you can:
 - Change file/folder names
 - Create and delete repositories
 - Share files by making a repository public
+
+This project can be run with storage in the cloud (aws s3) or locally (seaweedfs s3)
 
 ## How to run with docker and aws s3
 - Create in aws an s3 bucket
@@ -33,8 +35,8 @@ Currently you can:
     }
 ]
 ```
-- Create in aws IAM service AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID
-- Create a ".env" file in backend/storage/aws/ containing:
+- Create in aws using the IAM service AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID
+- Create a ".env" file in this project's files in backend/storage/aws/ containing:
 ```
 AWS_SECRET_ACCESS_KEY=your-secret-key
 AWS_ACCESS_KEY_ID=your-access-key
@@ -43,14 +45,25 @@ BUCKET=your-s3-bucket-name
 ```
 - Run:
 ```bash
-docker compose -f compose.cloud.yaml up --build
+docker compose -f compose.cloud.yaml up --build --attach backend
 ```
+Once the backend service prints "starting server" the app should be available on: http://localhost:5173
 
 ## How to run with docker and local s3
-- Set "-volumeSizeLimitMB=1000" in compose.local.yaml to desired space for files
+- Set "-volumeSizeLimitMB=1000" in compose.local.yaml to the desired space the file storage should have
 - Run:
 ```bash
-docker compose -f compose.local.yaml up --build
+docker compose -f compose.local.yaml up --build --attach backend
 ```
+Once the backend service prints "starting server" the app should be available on: http://localhost:5173
 
-## How to set up accounts once app is running
+## How to set up accounts once the app is running
+After creating a user account, in order to be able to upload files you have to set in the database that user's role to admin or user, and space to how many bytes that user can upload
+
+You can do it by running these commands:
+```bash
+docker exec -it database sh
+psql
+\c app
+UPDATE user_ SET role_ = 'user', space_ = 1000000000 WHERE username_ = 'username';
+```
