@@ -9,6 +9,15 @@ Currently you can:
 
 This project can be run with storage in the cloud (aws s3) or locally (seaweedfs s3)
 
+### Example images
+Uploading a file
+<img width="3829" height="1903" alt="image" src="https://github.com/user-attachments/assets/008d93c9-653f-4cb0-9b25-aee7589d66fd" />
+Folder with total file size
+<img width="2181" height="157" alt="image" src="https://github.com/user-attachments/assets/3eb2e239-7497-4c44-8ce9-89667e66848c" />
+
+
+
+
 ## How to run with docker and aws s3
 - Create in aws an s3 bucket
 - Go to your bucket -> permissions -> scroll down to "Cross-origin resource sharing" and change it to:
