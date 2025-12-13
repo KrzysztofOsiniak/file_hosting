@@ -110,7 +110,7 @@ services:
     ports:
       - 18080:18080
       - 9325:9325
-    command: 'volume -mserver="master:9333" -ip.bind=0.0.0.0 -port=18080 -dir=/data -max=8 -metricsPort=9325'
+    command: 'volume -mserver="master:9333" -ip.bind=0.0.0.0 -port=18080 -dir=/data -max=1 -metricsPort=9325'
     volumes:
       - ./seaweedfs/volume:/data
   filer:

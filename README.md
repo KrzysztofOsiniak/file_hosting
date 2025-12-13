@@ -59,7 +59,7 @@ docker compose -f compose.cloud.yaml up --build --attach backend
 Once the backend service prints "starting server" the app should be available on: http://localhost:5173
 
 ## How to run with docker and local s3
-- Set "-volumeSizeLimitMB=1000" in compose.local.yaml to the desired space the file storage should have
+- Set "-volumeSizeLimitMB=1000" in compose.local.yaml to the desired space the file storage should have. Note that there is currently a bug in local s3 where deleting files does not fully reclaim the space they were taking.
 - Run:
 ```bash
 docker compose -f compose.local.yaml up --build --attach backend
