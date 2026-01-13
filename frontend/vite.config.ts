@@ -10,8 +10,10 @@ export default defineConfig({
         port: 5173,
         proxy: {
         '/api': {
-            target: 'https://backend:8080',
-            secure: false, // Set to false since backend uses self-signed certs.
+            target: 'http://backend:8080'
+            // Below is https setup.
+            // target: 'https://backend:8080',
+            // secure: false, // Set to false since backend uses self-signed certs.
         },
         },
     },

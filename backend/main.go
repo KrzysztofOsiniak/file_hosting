@@ -6,11 +6,7 @@ import (
 	m "backend/middleware"
 	"backend/routes"
 	"backend/storage"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/tls"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -30,16 +26,18 @@ func main() {
 
 	p := http.Protocols{}
 	p.SetHTTP1(true)
-	p.SetHTTP2(true)
+	// Below is https setup.
+	// p.SetHTTP2(true)
 
+	// Below is https setup.
 	// Generate a private key for TLS connections.
-	c := []tls.Certificate{}
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		fmt.Println("Cannot generate RSA key")
-		log.Fatalln(err)
-	}
-	c = append(c, tls.Certificate{PrivateKey: privateKey})
+	// c := []tls.Certificate{}
+	// privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	// if err != nil {
+	// 	fmt.Println("Cannot generate RSA key")
+	// 	log.Fatalln(err)
+	// }
+	// c = append(c, tls.Certificate{PrivateKey: privateKey})
 
 	server := http.Server{
 		Addr:    os.Getenv("SERVER_HOST"),
@@ -51,12 +49,15 @@ func main() {
 		IdleTimeout:  time.Minute * 3,
 		ReadTimeout:  time.Second * 10,
 		WriteTimeout: time.Second * 10,
-		TLSConfig:    &tls.Config{Certificates: c},
+		// Below is https setup.
+		// TLSConfig:    &tls.Config{Certificates: c},
 	}
 	storage.InitStorage()
 	db.InitDB()
 	// This is optional, you can disable logging by removing this line.
 	logdb.InitDB()
 	fmt.Println("Connected to DB, starting server")
-	fmt.Println(server.ListenAndServeTLS("util/cert.pem", "util/key.pem"))
+	fmt.Println(server.ListenAndServe())
+	// Below is https setup.
+	// fmt.Println(server.ListenAndServeTLS("util/cert.pem", "util/key.pem"))
 }
