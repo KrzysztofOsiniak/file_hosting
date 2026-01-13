@@ -318,3 +318,10 @@
     color: var(--warning-color);
     font-size: 2.2rem;
 }
+
+
+@media (max-height: 40rem) {
+  .mainShadowWrapper {
+    width: 100%;
+  }
+}
