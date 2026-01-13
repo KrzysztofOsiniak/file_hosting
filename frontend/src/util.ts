@@ -28,7 +28,7 @@ export function getUnitSize(size: number | null) {
     while(size >= 1000) {
         size = size/1000
     }
-    return Math.floor(size)
+    return Math.floor(size*100)/100
 }
 
 // If not zero, leftover is the size of the last part in partCount.

@@ -39,6 +39,7 @@ export type S3File = {
 export type FileInProgress = {
     id: number,
     bytesUploaded: number,
+    bytesUploadedHidden: number, // Bytes that are not displayed, updated more often.
     bytesUploadedPrevious: number,
     uploadSpeedBytes: number,
     timeFromLastUploadedBytes: Date,

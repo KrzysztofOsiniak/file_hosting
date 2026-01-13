@@ -105,7 +105,7 @@ export default function Repository() {
             }]
         })
 
-        setFilesInProgress(f => [...f, {id: fileID, bytesUploaded: 0, bytesUploadedPrevious: 0, 
+        setFilesInProgress(f => [...f, {id: fileID, bytesUploaded: 0, bytesUploadedHidden: 0, bytesUploadedPrevious: 0, 
             uploadSpeedBytes: 0, timeFromLastUploadedBytes: new Date(), error: ""}])
         let {partCount, partSize, leftover} = splitFile(file.size)
         uploadParts = uploadParts.sort((part1, part2) => part1.part - part2.part)
@@ -129,13 +129,16 @@ export default function Repository() {
             }))
             xhr.upload.addEventListener('progress', (e) => {
                 if (e.lengthComputable) {
-                    const bytesUploaded = e.loaded
+                    const totalXHRBytesUploaded = e.loaded
 
                     setFilesInProgress(f => f.map(f2 => {
                         if(f2.id === fileID) {
                             const now = new Date()
-                            const newBytesUploaded = f2.bytesUploaded + bytesUploaded - f2.bytesUploadedPrevious
-                            return {...f2, bytesUploaded: newBytesUploaded, bytesUploadedPrevious: bytesUploaded, uploadSpeedBytes: (bytesUploaded - f2.bytesUploadedPrevious)/((now.getTime()-f2.timeFromLastUploadedBytes.getTime())/1000), timeFromLastUploadedBytes: new Date()}
+                            const newBytesUploaded = f2.bytesUploadedHidden + totalXHRBytesUploaded - f2.bytesUploadedPrevious
+                            if(now.getTime()-f2.timeFromLastUploadedBytes.getTime() < 500) {
+                                return {...f2, bytesUploadedHidden: newBytesUploaded, bytesUploadedPrevious: totalXHRBytesUploaded}
+                            }
+                            return {...f2, bytesUploaded: newBytesUploaded, bytesUploadedHidden: newBytesUploaded, bytesUploadedPrevious: totalXHRBytesUploaded, uploadSpeedBytes: (newBytesUploaded - f2.bytesUploaded)/((now.getTime()-f2.timeFromLastUploadedBytes.getTime())/1000), timeFromLastUploadedBytes: new Date()}
                         }
                         return f2
                     }))
@@ -274,7 +277,7 @@ export default function Repository() {
                     alreadyUploadedBytes -= partSize
                 }
             })
-            return [...f, {id: fileID, bytesUploaded: alreadyUploadedBytes, bytesUploadedPrevious: 0, 
+            return [...f, {id: fileID, bytesUploaded: alreadyUploadedBytes, bytesUploadedHidden: alreadyUploadedBytes, bytesUploadedPrevious: 0, 
             uploadSpeedBytes: 0, timeFromLastUploadedBytes: new Date(), error: ""}]})
         
         for(let i = 0, start; i < uploadParts.length; i++) {
@@ -298,13 +301,16 @@ export default function Repository() {
             }))
             xhr.upload.addEventListener('progress', (e) => {
                 if (e.lengthComputable) {
-                    const bytesUploaded = e.loaded
+                    const totalXHRBytesUploaded = e.loaded
 
                     setFilesInProgress(f => f.map(f2 => {
                         if(f2.id === fileID) {
                             const now = new Date()
-                            const newBytesUploaded = f2.bytesUploaded + bytesUploaded - f2.bytesUploadedPrevious
-                            return {...f2, bytesUploaded: newBytesUploaded, bytesUploadedPrevious: bytesUploaded, uploadSpeedBytes: (bytesUploaded - f2.bytesUploadedPrevious)/((now.getTime()-f2.timeFromLastUploadedBytes.getTime())/1000), timeFromLastUploadedBytes: new Date()}
+                            const newBytesUploaded = f2.bytesUploadedHidden + totalXHRBytesUploaded - f2.bytesUploadedPrevious
+                            if(now.getTime()-f2.timeFromLastUploadedBytes.getTime() < 500) {
+                                return {...f2, bytesUploadedHidden: newBytesUploaded, bytesUploadedPrevious: totalXHRBytesUploaded}
+                            }
+                            return {...f2, bytesUploaded: newBytesUploaded, bytesUploadedHidden: newBytesUploaded, bytesUploadedPrevious: totalXHRBytesUploaded, uploadSpeedBytes: (newBytesUploaded - f2.bytesUploaded)/((now.getTime()-f2.timeFromLastUploadedBytes.getTime())/1000), timeFromLastUploadedBytes: new Date()}
                         }
                         return f2
                     }))
