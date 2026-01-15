@@ -45,3 +45,7 @@ export type FileInProgress = {
     timeFromLastUploadedBytes: Date,
     error: string,
 }
+export type UserSearchResult = {
+    id: number,
+    username: string,
+}

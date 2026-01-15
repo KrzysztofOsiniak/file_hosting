@@ -4,7 +4,7 @@ import type { ErrorResponse, FileInProgress, RepositoryResponse } from "./types"
 import { getUnit, getUnitSize, splitFile } from "./util"
 import { useEffect, useRef, useState } from "react"
 import { messages } from "./types"
-import type { S3File, Repository } from './types'
+import type { S3File, Repository, UserSearchResult } from './types'
 
 type UploadStartResponse = {
     uploadParts: UploadPart[],
@@ -32,9 +32,11 @@ export default function Repository() {
     const [warningMessage, setWarningMessage] = useState("")
     const [fileNameChangePopup, setFileNameChangePopup] = useState(false)
     const [folderNameChangePopup, setFolderNameChangePopup] = useState(false)
+    const [addMembersPopup, setAddMembersPopup] = useState(false)
     const [currentlyModifiedFile, setCurrentlyModifiedFile] = useState<S3File | null>(null)
     // Currently uploaded files.
     const [filesInProgress, setFilesInProgress] = useState<FileInProgress[]>([])
+    const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([])
     const [_, setDummyState] = useState(false)
 
     const nameChange = useRef<HTMLInputElement>(null)
@@ -43,6 +45,7 @@ export default function Repository() {
     const fileResumeInputRef = useRef<HTMLInputElement>(null)
     const fileResumeID = useRef(0)
     const pausedFiles = useRef<Set<number>>(new Set())
+    const userSearchRef = useRef<HTMLInputElement>(null)
 
     function handleFileUpload() {
         fileInputRef.current?.click()
@@ -720,6 +723,26 @@ export default function Repository() {
         setLoading(false)
     }
 
+    async function handleUserSearch(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
+        e.preventDefault()
+        const username = userSearchRef.current!.value
+        const res = await fetch(`/api/user/users/${username}`)
+        if(res.status == 404) {
+            setUserSearchResults([])
+            return
+        }
+        if(res.status != 200) {
+            setWarningMessage("Unknown error")
+            setWarningPopup(true)
+            return
+        }
+        const data = await res.json()
+        setUserSearchResults(data.users)
+    }
+    function handleAddMembersClick() {
+        setAddMembersPopup(false)
+    }
+
     function handleFolderClick(path: string) {
         setCurrentPath(path)
     }
@@ -864,6 +887,16 @@ export default function Repository() {
                 </div>)
             })}
         </div>
+
+        {repository.userPermission === "owner" ?
+        <button onClick={() => setAddMembersPopup(b => !b)}>
+            Add members
+        </button>
+        : <></>}
+
+        {addMembersPopup ? <AddMembers loading={loading} userSearchRef={userSearchRef} handleAddMembersClick={handleAddMembersClick}
+        handleUserSearch={handleUserSearch} userSearchResults={userSearchResults} ownerUsername={repository.ownerUsername} /> : <></>}
+
         {createFolderPopup ? <CreateFolderPopup handleCreateFolderClick={handleCreateFolderClick} folderName={folderName}
         loading={loading} handleCreateFolder={handleCreateFolder} status={status}/> : <></>}
 
@@ -876,6 +909,37 @@ export default function Repository() {
         {folderNameChangePopup ? <FolderNameChangePopup handleFolderNameChange={handleFolderNameChange} loading={loading} 
         setFolderNameChangePopup={setFolderNameChangePopup} status={status} nameChange={nameChange} 
         currentlyModifiedFile={currentlyModifiedFile} /> : <></>}
+    </div>
+    </div>
+    )
+}
+
+function AddMembers({loading, userSearchRef, handleUserSearch, userSearchResults, handleAddMembersClick, ownerUsername}: 
+    {loading: boolean, userSearchRef: React.RefObject<HTMLInputElement | null>, handleAddMembersClick: () => void, ownerUsername: string,
+    handleUserSearch: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void, userSearchResults: UserSearchResult[]}) {
+    return (
+    <div className={css.createFolderPopupWrapper} onClick={handleAddMembersClick}>
+    <div className={css.addMembersPopup} onClick={(e) => {e.stopPropagation()}}>
+        <div className={css.repositoryTitle}>Add members</div>
+        <form className={css.formContainerRow}>
+            <input className={css.createFolderInput} ref={userSearchRef} type="text" placeholder="Username" autoComplete="off" maxLength={100}/>
+            <button disabled={loading} className={!loading ? css.createFolderButton : css.createFolderButtonBlocked} onClick={e => handleUserSearch(e)}>
+                Search
+            </button>
+        </form>
+        <div className={css.userSearchResultsContainer}>
+            {userSearchResults?.map(u => {
+                if(u.username === ownerUsername) {
+                    return <></>
+                }
+                return (
+                <div className={css.userSearchResult} key={u.id}>
+                   <p>{u.username}</p>
+                   <p className={css.addMemberFont}>Add</p>
+                </div>
+                )
+            })}
+        </div>
     </div>
     </div>
     )
