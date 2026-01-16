@@ -69,12 +69,20 @@ func OptionalAuth(next http.Handler) http.Handler {
 				WHERE user_id_ = $1 AND token_ = $2 AND expiry_date_ > CURRENT_TIMESTAMP(0) RETURNING TRUE`, userID, claims["refreshtoken"]).Scan(&updated)
 				// Happens when no rows were updated.
 				if errors.Is(err, pgx.ErrNoRows) {
+					err := tx.Commit(ctx)
+					if err != nil {
+						fmt.Println(err)
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
 					next.ServeHTTP(w, r)
 					return
 				}
 				var pgErr *pgconn.PgError
 				ok := errors.As(err, &pgErr)
 				if ok && pgErr.Code == pgerrcode.SerializationFailure {
+					// End the transaction now to start another transaction.
+					tx.Rollback(ctx)
 					continue
 				}
 				if err != nil {
@@ -86,6 +94,8 @@ func OptionalAuth(next http.Handler) http.Handler {
 				err = tx.Commit(ctx)
 				ok = errors.As(err, &pgErr)
 				if ok && pgErr.Code == pgerrcode.SerializationFailure {
+					// End the transaction now to start another transaction.
+					tx.Rollback(ctx)
 					continue
 				}
 				if err != nil {
