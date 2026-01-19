@@ -82,6 +82,8 @@ func Auth(next http.Handler) http.Handler {
 				var pgErr *pgconn.PgError
 				ok := errors.As(err, &pgErr)
 				if ok && pgErr.Code == pgerrcode.SerializationFailure {
+					// End the transaction now to start another transaction.
+					tx.Rollback(ctx)
 					continue
 				}
 				if err != nil {
@@ -93,6 +95,8 @@ func Auth(next http.Handler) http.Handler {
 				err = tx.Commit(ctx)
 				ok = errors.As(err, &pgErr)
 				if ok && pgErr.Code == pgerrcode.SerializationFailure {
+					// End the transaction now to start another transaction.
+					tx.Rollback(ctx)
 					continue
 				}
 				if err != nil {
