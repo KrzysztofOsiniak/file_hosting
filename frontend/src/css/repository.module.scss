@@ -230,6 +230,25 @@
     align-items: center;
     flex-direction: column;
 }
+.addMembersButton {
+    margin-top: 2rem;
+    width: 15rem;
+    height: 5rem;
+    background: var(--main-color);
+    color: var(--font-color);
+    font-size: 1.6rem;
+    cursor: pointer;
+    outline: none;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    &:hover {
+        background: var(--main-dimmed-color);
+    }
+    &:active {
+        background: var(--main-dark-color);
+    }
+}
 .addMembersPopup {
     height: 80dvh;
     width: 50rem;

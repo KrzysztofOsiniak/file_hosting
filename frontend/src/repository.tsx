@@ -889,7 +889,7 @@ export default function Repository() {
         </div>
 
         {repository.userPermission === "owner" ?
-        <button onClick={() => setAddMembersPopup(b => !b)}>
+        <button className={css.addMembersButton} onClick={() => setAddMembersPopup(b => !b)}>
             Add members
         </button>
         : <></>}
