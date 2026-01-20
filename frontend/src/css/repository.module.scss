@@ -230,10 +230,11 @@
     align-items: center;
     flex-direction: column;
 }
-.addMembersButton {
-    margin-top: 2rem;
-    width: 15rem;
-    height: 5rem;
+.membersButton {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    height: 4rem;
+    line-height: 2.2;
     background: var(--main-color);
     color: var(--font-color);
     font-size: 1.6rem;
@@ -247,6 +248,40 @@
     }
     &:active {
         background: var(--main-dark-color);
+    }
+}
+.buttonsContainer {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-direction: row;
+}
+.manageMembersPopup {
+    height: 80dvh;
+    width: 80rem;
+    background-color: var(--bg-bright-color);
+    box-shadow: 0rem 0rem 0.6rem black;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+.currentMemberPermissionFont {
+    background: none;
+    font-size: 1.6rem;
+    outline: none;
+    border: none;
+    color: var(--secondary-dimmed-color);
+}
+.memberPermissionFont {
+    background: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    outline: none;
+    border: none;
+    color: var(--font-muted-color);
+    &:hover {
+        color: var(--main-dimmed-color);
     }
 }
 .addMembersPopup {
@@ -276,6 +311,28 @@
     &:hover {
         color: var(--secondary-dark-color);
     }
+}
+.removeMember {
+    background: none;
+    margin-right: 1rem;
+    margin-left: 1rem;
+    font-size: 1.6rem;
+    color: var(--warning-dimmed-color);
+    cursor: pointer;
+    outline: none;
+    border: none;
+    &:hover {
+        color: var(--warning-color);
+    }
+}
+.memberUsername {
+    color: var(--font-color);
+    margin-right: auto;
+}
+.memberAddedFont {
+    margin-right: 1rem;
+    margin-left: auto;
+    color: var(--font-muted-color);
 }
 .userSearchResultsContainer {
     margin-top: 2rem;

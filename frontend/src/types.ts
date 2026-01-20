@@ -23,7 +23,7 @@ export type Repository = {
     ownerUsername: string,
     visibility: "public" | "private",
 }
-type Member = {
+export type Member = {
     id: number,
     username: string,
     permission: "" | "full" | "read"

@@ -4,7 +4,7 @@ import type { ErrorResponse, FileInProgress, RepositoryResponse } from "./types"
 import { getUnit, getUnitSize, splitFile } from "./util"
 import { useEffect, useRef, useState } from "react"
 import { messages } from "./types"
-import type { S3File, Repository, UserSearchResult } from './types'
+import type { S3File, Repository, UserSearchResult, Member } from './types'
 
 type UploadStartResponse = {
     uploadParts: UploadPart[],
@@ -33,10 +33,12 @@ export default function Repository() {
     const [fileNameChangePopup, setFileNameChangePopup] = useState(false)
     const [folderNameChangePopup, setFolderNameChangePopup] = useState(false)
     const [addMembersPopup, setAddMembersPopup] = useState(false)
+    const [manageMembersPopup, setManageMembersPopup] = useState(false)
     const [currentlyModifiedFile, setCurrentlyModifiedFile] = useState<S3File | null>(null)
     // Currently uploaded files.
     const [filesInProgress, setFilesInProgress] = useState<FileInProgress[]>([])
     const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([])
+    const [members, setMembers] = useState<Member[]>([])
     const [_, setDummyState] = useState(false)
 
     const nameChange = useRef<HTMLInputElement>(null)
@@ -723,6 +725,65 @@ export default function Repository() {
         setLoading(false)
     }
 
+    async function handleAddMember(userID: number, username: string) {
+        setLoading(true)
+        const res = await fetch(`/api/member/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userID: userID, repositoryID: repositoryID, permission: "read"
+            })
+        })
+        if(res.status !== 200) {
+            setAddMembersPopup(false)
+            setWarningMessage("Unknown server error")
+            setWarningPopup(true)
+            setLoading(false)
+            return
+        }
+        const member = await res.json()
+        setMembers(m => [...m, {id: member.id, username: username, permission: "read"}])
+        setLoading(false)
+    }
+
+    async function setPermission(memberID: number, permission: "" | "full" | "read") {
+        setLoading(true)
+        const res = await fetch(`/api/member/permission`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: memberID, permission: permission
+            })
+        })
+        if(res.status != 200) {
+            setManageMembersPopup(false)
+            setWarningMessage("Unknown error")
+            setWarningPopup(true)
+            setLoading(false)
+            return
+        }
+        setMembers(m => m.map(m2 => m2.id === memberID ? {...m2, permission: permission} : m2))
+        setLoading(false)
+    }
+
+    async function removeMember(memberID: number) {
+        setLoading(true)
+        const res = await fetch(`/api/member/${memberID}`, {method: 'DELETE'})
+        if(res.status != 200) {
+            setManageMembersPopup(false)
+            setWarningMessage("Unknown error")
+            setWarningPopup(true)
+            setLoading(false)
+            return
+        }
+        setMembers(m => m.filter(m2 => m2.id !== memberID))
+        setLoading(false)
+    }
+
     async function handleUserSearch(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         e.preventDefault()
         const username = userSearchRef.current!.value
@@ -741,6 +802,9 @@ export default function Repository() {
     }
     function handleAddMembersClick() {
         setAddMembersPopup(false)
+    }
+    function handleManageMembersClick() {
+        setManageMembersPopup(false)
     }
 
     function handleFolderClick(path: string) {
@@ -770,6 +834,7 @@ export default function Repository() {
         })
         .then(data => {
             setRepository({name: data.name, userPermission: data.userPermission, ownerUsername: data.ownerUsername, visibility: data.visibility})
+            setMembers(data.members)
             setFiles(data.files)
         })
         .catch()
@@ -889,13 +954,22 @@ export default function Repository() {
         </div>
 
         {repository.userPermission === "owner" ?
-        <button className={css.addMembersButton} onClick={() => setAddMembersPopup(b => !b)}>
+        <div className={css.buttonsContainer}>
+            <button className={css.membersButton} onClick={() => setAddMembersPopup(b => !b)}>
             Add members
-        </button>
+            </button>
+            <button className={css.membersButton} onClick={() => setManageMembersPopup(b => !b)}>
+            Manage members
+            </button>
+        </div>
         : <></>}
 
-        {addMembersPopup ? <AddMembers loading={loading} userSearchRef={userSearchRef} handleAddMembersClick={handleAddMembersClick}
-        handleUserSearch={handleUserSearch} userSearchResults={userSearchResults} ownerUsername={repository.ownerUsername} /> : <></>}
+        {addMembersPopup ? <AddMembers members={members} loading={loading} userSearchRef={userSearchRef} handleAddMembersClick={handleAddMembersClick}
+        handleUserSearch={handleUserSearch} userSearchResults={userSearchResults} ownerUsername={repository.ownerUsername} 
+        handleAddMember={handleAddMember} /> : <></>}
+
+        {manageMembersPopup ? <ManageMembers setPermission={setPermission} loading={loading} members={members} 
+        handleManageMembersClick={handleManageMembersClick} removeMember={removeMember} /> : <></>}
 
         {createFolderPopup ? <CreateFolderPopup handleCreateFolderClick={handleCreateFolderClick} folderName={folderName}
         loading={loading} handleCreateFolder={handleCreateFolder} status={status}/> : <></>}
@@ -914,9 +988,10 @@ export default function Repository() {
     )
 }
 
-function AddMembers({loading, userSearchRef, handleUserSearch, userSearchResults, handleAddMembersClick, ownerUsername}: 
+function AddMembers({members, loading, userSearchRef, handleUserSearch, userSearchResults, handleAddMembersClick, ownerUsername, handleAddMember}: 
     {loading: boolean, userSearchRef: React.RefObject<HTMLInputElement | null>, handleAddMembersClick: () => void, ownerUsername: string,
-    handleUserSearch: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void, userSearchResults: UserSearchResult[]}) {
+    handleUserSearch: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void, userSearchResults: UserSearchResult[], 
+    handleAddMember: (id: number, username: string) => void, members: Member[]}) {
     return (
     <div className={css.createFolderPopupWrapper} onClick={handleAddMembersClick}>
     <div className={css.addMembersPopup} onClick={(e) => {e.stopPropagation()}}>
@@ -930,12 +1005,42 @@ function AddMembers({loading, userSearchRef, handleUserSearch, userSearchResults
         <div className={css.userSearchResultsContainer}>
             {userSearchResults?.map(u => {
                 if(u.username === ownerUsername) {
-                    return <></>
+                    return <p key={u.id}></p>
                 }
                 return (
                 <div className={css.userSearchResult} key={u.id}>
-                   <p>{u.username}</p>
-                   <p className={css.addMemberFont}>Add</p>
+                   <p className={css.memberUsername}>{u.username}</p>
+                   {!members.some(m => m.username === u.username) ? 
+                   <p className={css.addMemberFont} onClick={() => handleAddMember(u.id, u.username)}>Add</p>
+                   : <p className={css.memberAddedFont}>Added</p>
+                   }
+                </div>
+                )
+            })}
+        </div>
+    </div>
+    </div>
+    )
+}
+
+function ManageMembers({members, loading, setPermission, handleManageMembersClick, removeMember}: 
+    {handleManageMembersClick: () => void, members: Member[], loading: boolean, 
+    setPermission: (memberID: number, permission: "" | "full" | "read") => void, removeMember: (memberID: number) => void}) {
+    return (
+    <div className={css.createFolderPopupWrapper} onClick={handleManageMembersClick}>
+    <div className={css.manageMembersPopup} onClick={(e) => {e.stopPropagation()}}>
+        <div className={css.repositoryTitle}>Manage members</div>
+        <div className={css.userSearchResultsContainer}>
+            {members?.map(m => {
+                return (
+                <div className={css.userSearchResult} key={m.id}>
+                   <p className={css.memberUsername}>{m.username}</p>
+                   <button disabled={loading} className={`${m.permission === "read" ? css.currentMemberPermissionFont : css.memberPermissionFont}`}
+                   onClick={() => {m.permission === "read" ? null : setPermission(m.id, "read")}}>Read</button>
+                   <p className={css.separator}>/</p>
+                   <button disabled={loading} className={`${m.permission === "full" ? css.currentMemberPermissionFont : css.memberPermissionFont}`}
+                   onClick={() => {m.permission === "full" ? null : setPermission(m.id, "full")}}>Create&Delete</button>
+                   <button disabled={loading} className={css.removeMember} onClick={() => removeMember(m.id)}>Remove</button>
                 </div>
                 )
             })}
