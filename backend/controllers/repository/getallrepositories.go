@@ -67,7 +67,7 @@ func GetAllRepositories(w http.ResponseWriter, r *http.Request) {
 
 	// Get repositories where the user is a member.
 	rows, err = tx.Query(ctx, `SELECT r.id_, r.name_, u.username_, 
-	COALESCE((SELECT SUM(size_) FROM file_ f WHERE f.repository_id_ = r.id_), 0) 
+	COALESCE((SELECT SUM(size_) FROM file_ f WHERE f.repository_id_ = r.id_ AND f.user_id_ = @userID), 0) 
 	FROM repository_ r JOIN user_ u ON r.user_id_ = u.id_ JOIN member_ m ON r.id_ = m.repository_id_ 
 	WHERE m.user_id_ = @userID GROUP BY r.id_, r.name_, u.username_`,
 		pgx.NamedArgs{"userID": userID})

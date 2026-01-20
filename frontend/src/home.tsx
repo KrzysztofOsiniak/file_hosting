@@ -61,7 +61,8 @@ function Repositories({username, role}: {username: string | null, role: string |
 
         <div className={css.repositoriesTitle}>Member repositories</div>
         <div className={css.repositoriesContainer}>
-            <MemberRepositories username={username} role={role} r={r} error={error}/>
+            <MemberRepositories username={username} role={role} r={r} error={error}
+            setRepositories={setRepositories}/>
         </div>
         </>
     )
@@ -70,7 +71,7 @@ function Repositories({username, role}: {username: string | null, role: string |
 function OwnedRepositories(
 {username, role, r, error, setRepositories}: {username: string | null, role: string | null, r: Repositories | null, 
 error: number, setRepositories: React.Dispatch<React.SetStateAction<Repositories | null>>}) {
-    const navigate = useNavigate()    
+    const navigate = useNavigate()
 
     const [loading, setLoading] = useState(false)
     const [repositoryVisibility, setRepositoryVisibility] = useState("Private")
@@ -194,9 +195,24 @@ error: number, setRepositories: React.Dispatch<React.SetStateAction<Repositories
     )
 }
 
-function MemberRepositories(
-{username, role, r, error}: {username: string | null, role: string | null, r: Repositories | null, 
-    error: number}) {
+function MemberRepositories({username, role, r, error, setRepositories}: 
+{username: string | null, role: string | null, r: Repositories | null, error: number, 
+setRepositories: React.Dispatch<React.SetStateAction<Repositories | null>>}) {
+
+    const navigate = useNavigate()
+
+    async function leaveRepository(e: React.MouseEvent<HTMLButtonElement>, repositoryID: number) {
+        e.stopPropagation()
+        const res = await fetch(`/api/member/leave/${repositoryID}`, {method: 'DELETE'})
+        if(res.status != 200) {
+            return
+        }
+        setRepositories(r => {
+            if(r === null) return null
+            return {...r, repositories: r.repositories.filter(r => r.id !== repositoryID)}
+        })    
+    }
+
     if(role === null) {
         return <div className={css.informationText}>Log in to see the repositories you are a member in</div>
     }
@@ -211,7 +227,20 @@ function MemberRepositories(
         <>
         {r.repositories.filter(repo => repo.ownerUsername !== username).length === 0 ? 
         <div className={css.informationText}>No repositories</div> : 
-        r.repositories.map(repo => repo.ownerUsername !== username ? <div>{repo.name}</div> : <></>)}
+        <>
+            <div className={css.ownedRepositoriesContainerElement}>
+                <div className={css.ownedRepositoriesName}>Repository name</div>
+                <div className={css.ownedRepositoriesUploadSize}>Your files</div>
+            </div>
+            
+            {r.repositories.map(repo => repo.ownerUsername !== username ? 
+            <div onClick={() => navigate(`/repository/${repo.id}`)} className={`${css.ownedRepositoriesContainerElement} ${css.selectable}`} key={repo.id}>
+                <div className={css.ownedRepositoriesName} title={repo.name}>{repo.ownerUsername}<p className={css.separator}>/</p>{repo.name}</div>
+                <div className={css.ownedRepositoriesUploadSize}>{getUnitSize(repo.userUploadedSpace)}{getUnit(repo.userUploadedSpace)}</div>
+                <div className={css.ownedRepositoriesDeleteContainer}><button onClick={(e) => {leaveRepository(e, repo.id)}} className={css.ownedRepositoriesDelete}>Leave</button></div>
+            </div>
+            : <></>)}
+        </>}
         </>
     )
 }

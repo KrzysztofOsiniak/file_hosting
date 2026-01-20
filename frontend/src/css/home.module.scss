@@ -105,6 +105,10 @@
         color: var(--warning-dimmed-color);
     }
 }
+.separator {
+    color: var(--main-color);
+    display: inline;
+}
 .informationText {
     display: flex;
     align-items: center;

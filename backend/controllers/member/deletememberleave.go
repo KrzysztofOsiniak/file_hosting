@@ -17,12 +17,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// Delete a repository's member as the repository owner, then delete that member's files (without folders).
-func DeleteMember(w http.ResponseWriter, r *http.Request) {
+// Delete a repository's member as the member themself, then delete that member's files (without folders).
+func DeleteMemberLeave(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(types.ContextKey("id")).(int)
 	idString := chi.URLParam(r, "id")
-	// Check if the id to delete is a number.
-	id, err := strconv.Atoi(idString)
+	// Check if the memberID to delete is a number.
+	repositoryID, err := strconv.Atoi(idString)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -47,8 +47,16 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	// If commit is not run first this will rollback the transaction.
 	defer tx.Rollback(ctx)
 
+	var memberID int
+	err = tx.QueryRow(ctx, "SELECT id_ FROM member_ WHERE user_id_ = $1 AND repository_id_ = $2", userID, repositoryID).Scan(&memberID)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	// Check if the user can delete this member.
-	_, err = tx.Exec(ctx, "CALL check_permission_delete_member_(@userID, @memberID)", pgx.NamedArgs{"userID": userID, "memberID": id})
+	_, err = tx.Exec(ctx, "CALL check_permission_delete_member_(@userID, @memberID)", pgx.NamedArgs{"userID": userID, "memberID": memberID})
 	var pgErr *pgconn.PgError
 	ok := errors.As(err, &pgErr)
 	if ok && pgErr.Code == pgerrcode.PrivilegeNotGranted {
@@ -63,11 +71,8 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the data to remove the member's files from s3.
-	var (
-		memberUserID int
-		repositoryID int
-	)
-	err = tx.QueryRow(ctx, "SELECT user_id_, repository_id_ FROM member_ WHERE id_ = $1", id).Scan(&memberUserID, &repositoryID)
+	var memberUserID int
+	err = tx.QueryRow(ctx, "SELECT user_id_, repository_id_ FROM member_ WHERE id_ = $1", memberID).Scan(&memberUserID, &repositoryID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)
@@ -151,7 +156,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Delete the member.
-		_, err = tx.Exec(ctx, "DELETE FROM member_ WHERE id_ = $1", id)
+		_, err = tx.Exec(ctx, "DELETE FROM member_ WHERE id_ = $1", memberID)
 		ok = errors.As(err, &pgErr)
 		if ok && pgErr.Code == pgerrcode.SerializationFailure {
 			// End the transaction now to start another transaction.
