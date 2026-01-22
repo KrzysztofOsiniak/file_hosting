@@ -5,7 +5,8 @@ Currently you can:
 - Create and delete folders
 - Change file/folder names
 - Create and delete repositories
-- Share files by making a repository public
+- Add members to a repository and manage their permissions
+- Share files by adding members or making a repository public
 
 This project can be run with storage in the cloud (aws s3) or locally (seaweedfs s3)
 
