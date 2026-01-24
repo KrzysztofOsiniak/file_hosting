@@ -7,6 +7,7 @@ Currently you can:
 - Create and delete repositories
 - Add members to a repository and manage their permissions
 - Share files by adding members or making a repository public
+- Manage accounts as an admin and set their roles or upload limits
 
 This project can be run with storage in the cloud (aws s3) or locally (seaweedfs s3)
 
@@ -67,12 +68,14 @@ docker compose -f compose.local.yaml up --build --attach backend
 Once the backend service prints "starting server" the app should be available on: http://localhost:5173
 
 ## How to set up accounts once the app is running
-After creating a user account, in order to be able to upload files you have to set in the database that user's role to admin or user, and space to how many bytes that user can upload
+After creating a user account, in order to be able to upload files you have to set in the database that user's role to admin or user, and space to how many bytes that user can upload.
 
-You can do it by running these commands:
+Once you have created an admin account, you can use the admin page to manage other accounts.
+
+You can create an admin account by running these commands:
 ```bash
 docker exec -it database sh
 psql
 \c app
-UPDATE user_ SET role_ = 'user', space_ = 1000000000 WHERE username_ = 'username';
+UPDATE user_ SET role_ = 'admin', space_ = 1000000000 WHERE username_ = 'your-username';
 ```
