@@ -20,6 +20,7 @@ type user struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
+	Space    int    `json:"space"`
 }
 
 // Get an array of users that have the value of search in their username.
@@ -46,7 +47,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback(ctx)
 
 	// Get the users.
-	rows, err := tx.Query(ctx, "SELECT id_, username_, role_ FROM user_ WHERE LOWER(username_) LIKE '%' || LOWER($1) || '%' LIMIT 10", search)
+	rows, err := tx.Query(ctx, "SELECT id_, username_, role_, space_ FROM user_ WHERE LOWER(username_) LIKE '%' || LOWER($1) || '%' LIMIT 10", search)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -57,7 +58,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	userArr := allUsersResponse{}
 	for rows.Next() {
 		user := user{}
-		err = rows.Scan(&user.ID, &user.Username, &user.Role)
+		err = rows.Scan(&user.ID, &user.Username, &user.Role, &user.Space)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)

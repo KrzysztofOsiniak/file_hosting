@@ -49,3 +49,9 @@ export type UserSearchResult = {
     id: number,
     username: string,
 }
+export type UserSearchResultAdmin = {
+    id: number,
+    username: string,
+    role: string,
+    space: number,
+}

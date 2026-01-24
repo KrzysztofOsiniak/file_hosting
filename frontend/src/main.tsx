@@ -7,6 +7,7 @@ import Signup from './signup.tsx'
 import RootHeader from './rootheader.tsx'
 import Home from './home.tsx'
 import Repository from './repository.tsx'
+import Admin from './admin.tsx'
 
 const router = createBrowserRouter([
     {
@@ -23,6 +24,11 @@ const router = createBrowserRouter([
             {
                 path: "/home",
                 element: <Home/>,
+                errorElement: <Error/>
+            },
+            {
+                path: "/admin",
+                element: <Admin/>,
                 errorElement: <Error/>
             },
             {

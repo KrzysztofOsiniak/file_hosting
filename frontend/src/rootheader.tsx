@@ -52,6 +52,10 @@ function RootHeader() {
                 <div className={css.profileOption}>Username: {username}</div>
                 <div className={css.profileOption}>Role: {role}</div>
                 <div className={css.profileOption}>Free space: {freeSpaceDisplay}{freeSpaceUnit}/{space}{spaceUnit}</div>
+                {role === "admin" ?
+                <button className={css.logout} onClick={() => navigate("/admin")}>
+                Manage users
+                </button> : <></>}
                 <button disabled={loadingLogout} className={!loadingLogout ? css.logout : css.logoutBlocked} onClick={handleLogout}>Log out</button>
             </div>
         </div> : <></>}
