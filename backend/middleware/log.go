@@ -4,6 +4,7 @@ import (
 	logdb "backend/logdatabase"
 	"backend/types"
 	"context"
+	"strings"
 
 	"backend/util/logutil"
 	"fmt"
@@ -52,7 +53,16 @@ func DBRequestLogger(next http.Handler) http.Handler {
 		defer func() {
 			if logdb.Pool != nil {
 				// Pass the execution time with float accuracy by diving by 1000.
-				logutil.Log(r.RemoteAddr, meta.ID, meta.Username, float64(time.Since(t1).Microseconds())/1000, r.URL.Path, r.Method, ww.Status())
+				ip := r.Header.Get("X-Real-IP")
+				if ip == "" {
+					r.Header.Get("X-Forwarded-For")
+					ips := strings.Split(ip, ",")
+					ip = strings.TrimSpace(ips[0])
+				}
+				if ip == "" {
+					ip = r.RemoteAddr
+				}
+				logutil.Log(ip, meta.ID, meta.Username, float64(time.Since(t1).Microseconds())/1000, r.URL.Path, r.Method, ww.Status())
 			}
 		}()
 
