@@ -883,6 +883,8 @@ export default function Repository() {
             <input type="file" onChange={handleResumeUpload} ref={fileResumeInputRef} style={{display: 'none'}}/>
             <div className={css.filesElement}>
                 <div className={css.currentPath}>{"/" + currentPath}</div>
+                {(repository.userPermission === "full" || repository.userPermission === "owner") ?
+                <>
                 <div className={css.uploadContainer} onClick={handleFileUpload}>
                     Upload file
                     <svg viewBox="0 -960 960 960" className={css.uploadIcon}><path d="M440-200h80v-167l64 64 56-57-160-160-160 160 57 56 63-63v167ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z"/></svg>
@@ -891,6 +893,7 @@ export default function Repository() {
                     Create folder
                     <svg viewBox="0 -960 960 960" className={css.createFolderIcon}><path d="M560-320h80v-80h80v-80h-80v-80h-80v80h-80v80h80v80ZM160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0 0v-480 480Z"/></svg>
                 </div>
+                </> : <></>}
             </div>
             {currentPath !== "" ?
                 <div onClick={handleGoToPreviousFolder} className={`${css.filesElement} ${css.selectable}`}>
