@@ -92,7 +92,7 @@ services:
       - log_database:/var/lib/postgresql/data
   master:
     container_name: seaweedfs_master
-    image: chrislusf/seaweedfs:4.01
+    image: chrislusf/seaweedfs:4.07
     user: root
     ports:
       - 9333:9333
@@ -103,7 +103,7 @@ services:
       - ./seaweedfs/master:/data
   volume:
     container_name: seaweedfs_volume
-    image: chrislusf/seaweedfs:4.01
+    image: chrislusf/seaweedfs:4.07
     user: root
     depends_on:
       - master
@@ -115,7 +115,7 @@ services:
       - ./seaweedfs/volume:/data
   filer:
     container_name: seaweedfs_filer
-    image: chrislusf/seaweedfs:4.01
+    image: chrislusf/seaweedfs:4.07
     user: root
     command: 'filer -master="master:9333" -ip.bind=0.0.0.0 -metricsPort=9326'
     depends_on:

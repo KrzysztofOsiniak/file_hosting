@@ -1,4 +1,4 @@
-FROM chrislusf/seaweedfs:4.01
+FROM chrislusf/seaweedfs:4.07
 
 USER root
 
