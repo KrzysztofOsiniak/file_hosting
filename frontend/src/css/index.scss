@@ -35,3 +35,14 @@
     flex-direction: column;
     background: var(--bg-dark-color);
 }
+
+@media (max-height: 40rem) {
+    :root {
+        font-size: 32.5%;
+    }
+}
+@media (max-width: 40rem) {
+    :root {
+        font-size: 32.5%;
+    }
+}
